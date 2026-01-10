@@ -829,6 +829,7 @@ header h1 {
     cursor: pointer;
     transition: all 0.3s;
     position: relative;
+    filter: grayscale(100%);
 }
 
 .selected-tile:hover {
@@ -927,9 +928,8 @@ header h1 {
     cursor: pointer;
     transition: all 0.3s;
     user-select: none;
-    font-variant-emoji: text;
-    -webkit-font-smoothing: antialiased;
     position: relative;
+    filter: grayscale(100%);
 }
 
 .tile-count {
