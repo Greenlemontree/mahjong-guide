@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riichi Mahjong Scorer & Guide</title>
+
+    <!-- PWA Features for iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Riichi Mahjong">
+    <meta name="theme-color" content="#2c5282">
+
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🀄 Riichi Mahjong Helper</h1>
+            <div class="mode-selector">
+                <button id="mode3p" class="mode-btn">3 Players (Sanma)</button>
+                <button id="mode4p" class="mode-btn active">4 Players</button>
+            </div>
+        </header>
+
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="scorer">Scorer</button>
+            <button class="tab-btn" data-tab="hand-input">Hand Calculator</button>
+            <button class="tab-btn" data-tab="multiplayer">Multiplayer</button>
+            <button class="tab-btn" data-tab="rules">Rules & Yaku</button>
+            <button class="tab-btn" data-tab="tiles">Tile Guide</button>
+        </nav>
+
+        <!-- SCORER TAB -->
+        <div id="scorer-tab" class="tab-content active">
+            <div class="game-setup">
+                <h2>Game Setup</h2>
+                <div class="starting-points">
+                    <label>Starting Points:</label>
+                    <select id="startingPoints">
+                        <option value="25000">25,000 (Standard)</option>
+                        <option value="30000">30,000</option>
+                        <option value="35000">35,000</option>
+                    </select>
+                </div>
+                <button id="newGame" class="btn-primary">New Game</button>
+            </div>
+
+            <div id="gameArea" class="game-area" style="display: none;">
+                <div class="round-info">
+                    <div class="round-display">
+                        <span id="roundWind">東</span>
+                        <span id="roundNumber">1</span>
+                        <span>局</span>
+                    </div>
+                    <div class="honba-riichi">
+                        <span>本場: <span id="honba">0</span></span>
+                        <span>立直棒: <span id="riichiSticks">0</span></span>
+                    </div>
+                </div>
+
+                <div id="playerScores" class="player-scores"></div>
+
+                <div class="score-actions">
+                    <h3>Record Hand Result</h3>
+                    <div class="result-type">
+                        <button class="result-btn" data-result="ron">Ron</button>
+                        <button class="result-btn" data-result="tsumo">Tsumo</button>
+                        <button class="result-btn" data-result="draw">Draw</button>
+                        <button class="result-btn" data-result="chombo">Chombo</button>
+                    </div>
+                </div>
+
+                <div id="resultForm" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- HAND INPUT CALCULATOR TAB -->
+        <div id="hand-input-tab" class="tab-content">
+            <h2>Hand Calculator - Build Your Hand</h2>
+
+            <div class="hand-builder">
+                <div class="hand-settings">
+                    <div class="setting-row">
+                        <label>Number of Players:</label>
+                        <select id="handPlayerCount">
+                            <option value="4">4 Players</option>
+                            <option value="3">3 Players (Sanma)</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label>Winner Type:</label>
+                        <select id="handWinType">
+                            <option value="tsumo">Tsumo (Self-draw)</option>
+                            <option value="ron">Ron (Discard)</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label>Position:</label>
+                        <select id="handPosition">
+                            <option value="dealer">Dealer (親)</option>
+                            <option value="nondealer">Non-dealer (子)</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label>Hand Closed?</label>
+                        <select id="handClosed">
+                            <option value="yes">Yes (門前)</option>
+                            <option value="no">No (Open)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="hand-settings" style="margin-top: 16px;">
+                    <h4 style="margin-bottom: 12px; color: #2c5282; grid-column: 1 / -1;">Special Conditions</h4>
+
+                    <div class="setting-row">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="handRiichi" style="width: 18px; height: 18px;">
+                            <span>Riichi (立直)</span>
+                        </label>
+                    </div>
+
+                    <div class="setting-row">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="handDoubleRiichi" style="width: 18px; height: 18px;">
+                            <span>Double Riichi (ダブル立直)</span>
+                        </label>
+                        <p style="font-size: 0.85em; color: #718096; margin: 4px 0 0 26px;">Riichi on first turn</p>
+                    </div>
+
+                    <div class="setting-row">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="handIppatsu" style="width: 18px; height: 18px;">
+                            <span>Ippatsu (一発)</span>
+                        </label>
+                        <p style="font-size: 0.85em; color: #718096; margin: 4px 0 0 26px;">Won within 1 turn after riichi</p>
+                    </div>
+
+                    <div class="setting-row">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="handRinshan" style="width: 18px; height: 18px;">
+                            <span>Rinshan Kaihou (嶺上開花)</span>
+                        </label>
+                        <p style="font-size: 0.85em; color: #718096; margin: 4px 0 0 26px;">Won on replacement tile after kan</p>
+                    </div>
+
+                    <div class="setting-row">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="handChankan" style="width: 18px; height: 18px;">
+                            <span>Chankan (槍槓)</span>
+                        </label>
+                        <p style="font-size: 0.85em; color: #718096; margin: 4px 0 0 26px;">Won by robbing a kan</p>
+                    </div>
+
+                    <div class="setting-row">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="handHaitei" style="width: 18px; height: 18px;">
+                            <span>Haitei/Houtei (海底/河底)</span>
+                        </label>
+                        <p style="font-size: 0.85em; color: #718096; margin: 4px 0 0 26px;">Won on last tile of wall/discards</p>
+                    </div>
+                </div>
+
+                <div class="your-hand">
+                    <h3>Your Hand (Click tiles below to add)</h3>
+                    <div id="selectedTiles" class="selected-tiles"></div>
+
+                    <div style="margin: 16px 0;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="checkFuriten" style="width: 18px; height: 18px;">
+                            <span>Check for Furiten (have you discarded winning tile?)</span>
+                        </label>
+                    </div>
+
+                    <div id="discardedTiles" style="display: none; margin: 12px 0;">
+                        <p style="font-size: 0.9em; margin-bottom: 8px;">Select tiles you've discarded (Shift+Click tiles below):</p>
+                        <div id="discardPicker" class="selected-tiles" style="min-height: 60px;"></div>
+                    </div>
+
+                    <div class="hand-actions">
+                        <button id="clearHand" class="btn-secondary">Clear Hand</button>
+                        <button id="calculateHand" class="btn-primary">Calculate Score</button>
+                        <button id="chomboBtn" class="btn-chombo" style="display: none;">⚠️ Declare Chombo</button>
+                    </div>
+                </div>
+
+                <div class="tile-selector">
+                    <h4>Man (Characters) 萬</h4>
+                    <div class="tile-picker" id="manTiles"></div>
+
+                    <h4>Pin (Circles) 筒</h4>
+                    <div class="tile-picker" id="pinTiles"></div>
+
+                    <h4>Sou (Bamboo) 索</h4>
+                    <div class="tile-picker" id="souTiles"></div>
+
+                    <h4>Honors 字</h4>
+                    <div class="tile-picker" id="honorTiles"></div>
+                </div>
+
+                <div id="handResult" class="hand-result" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- MULTIPLAYER TAB -->
+        <div id="multiplayer-tab" class="tab-content">
+            <h2>Local Multiplayer</h2>
+
+            <div class="multiplayer-section">
+                <div class="connection-status" id="connectionStatus">
+                    <p>Not connected</p>
+                </div>
+
+                <div class="multiplayer-options">
+                    <div class="option-card">
+                        <h3>Host a Game</h3>
+                        <p>Create a room and share the code with other players</p>
+                        <button id="hostGame" class="btn-primary">Create Room</button>
+                        <div id="roomCode" style="display: none;">
+                            <h4>Room Code:</h4>
+                            <div class="code-display"></div>
+                            <p class="code-instruction">Share this code with other players</p>
+                        </div>
+                    </div>
+
+                    <div class="option-card">
+                        <h3>Join a Game</h3>
+                        <p>Enter the room code from the host</p>
+                        <input type="text" id="joinCodeInput" placeholder="Enter room code" maxlength="6">
+                        <button id="joinGame" class="btn-primary">Join Room</button>
+                    </div>
+                </div>
+
+                <div id="connectedPlayers" style="display: none;">
+                    <h3>Connected Players</h3>
+                    <div id="playerList"></div>
+                </div>
+
+                <div class="multiplayer-info">
+                    <h3>How It Works</h3>
+                    <ul>
+                        <li>One person hosts and gets a 6-digit room code</li>
+                        <li>Other players join using that code</li>
+                        <li>Everyone sees the same scores in real-time</li>
+                        <li>Only the host can record hands (others view only)</li>
+                        <li>Works on same WiFi or internet connection</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- RULES TAB -->
+        <div id="rules-tab" class="tab-content">
+            <h2>Rules & Yaku Reference</h2>
+
+            <div class="rules-section" style="background: #e6fffa; border-left: 4px solid #319795;">
+                <h3 style="color: #234e52;">🎲 Beginner's Guide: Game Setup</h3>
+
+                <h4>Tile Set</h4>
+                <p>A complete Riichi Mahjong set contains 136 tiles:</p>
+                <ul>
+                    <li><strong>Man (Characters) 萬:</strong> 1-9, four of each (36 tiles)</li>
+                    <li><strong>Pin (Circles) 筒:</strong> 1-9, four of each (36 tiles)</li>
+                    <li><strong>Sou (Bamboo) 索:</strong> 1-9, four of each (36 tiles)</li>
+                    <li><strong>Winds 風:</strong> East, South, West, North, four of each (16 tiles)</li>
+                    <li><strong>Dragons 三元:</strong> White, Green, Red, four of each (12 tiles)</li>
+                </ul>
+
+                <h4>Building the Wall</h4>
+                <ol>
+                    <li><strong>Shuffle:</strong> Mix all 136 tiles face-down on the table</li>
+                    <li><strong>Each player builds:</strong> Make a wall of 17 tiles wide × 2 tiles high</li>
+                    <li><strong>For 4 players:</strong> Each player has 34 tiles (17 × 2)</li>
+                    <li><strong>For 3 players:</strong> Remove all 2-8 Man tiles. Each player builds 18 wide × 2 high (36 tiles)</li>
+                    <li><strong>Form square:</strong> Push the four walls together to form a square in the center</li>
+                </ol>
+
+                <h4>Breaking the Wall & Starting Hands</h4>
+                <ol>
+                    <li><strong>Dealer (親):</strong> East player is the starting dealer</li>
+                    <li><strong>Roll dice:</strong> Dealer rolls two dice (or use 1-4 to select wall)</li>
+                    <li><strong>Count counterclockwise:</strong> Starting from dealer as 1, count the rolled number to find which wall to break</li>
+                    <li><strong>Break position:</strong> From the right end of that wall, count tiles equal to the dice roll, then break after that tile</li>
+                    <li><strong>Draw tiles:</strong> Starting from the break:
+                        <ul>
+                            <li>Dealer draws 4 tiles, then each player in turn (counterclockwise)</li>
+                            <li>Repeat 3 times (everyone has 12 tiles)</li>
+                            <li>Dealer takes 2 more tiles (1 from top, 1 from bottom of next stack)</li>
+                            <li>Other players take 1 more tile each</li>
+                            <li>Dealer starts with 14 tiles, others with 13 tiles</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h4>Dead Wall (王牌)</h4>
+                <p>The last 14 tiles of the wall are reserved:</p>
+                <ul>
+                    <li>Last 7 stacks (14 tiles) are not used for normal draws</li>
+                    <li>Used for replacement tiles after Kan (adding to a triplet)</li>
+                    <li>Dora indicator is the 3rd tile from the end (flip it up)</li>
+                </ul>
+
+                <h4>Game Flow</h4>
+                <ol>
+                    <li><strong>Dealer's turn:</strong> Dealer discards 1 tile (now has 13)</li>
+                    <li><strong>Players' turns:</strong> Draw 1 tile → Discard 1 tile (counterclockwise)</li>
+                    <li><strong>Calls:</strong> Any player can call Chi (sequence), Pon (triplet), or Kan (quad) on discards</li>
+                    <li><strong>Winning:</strong> First to complete a valid hand (14 tiles = 4 sets + 1 pair) with at least 1 yaku</li>
+                    <li><strong>Exhaustive draw:</strong> If no one wins before the dead wall, hand ends in draw</li>
+                </ol>
+
+                <h4>Basic Winning Hand Structure</h4>
+                <p><strong>14 tiles total = 4 sets + 1 pair</strong></p>
+                <ul>
+                    <li><strong>Set:</strong> 3 identical tiles (triplet) OR 3 sequential tiles of same suit (sequence)</li>
+                    <li><strong>Pair:</strong> 2 identical tiles</li>
+                    <li><strong>Special:</strong> Seven Pairs (7 different pairs)</li>
+                    <li><strong>Important:</strong> You MUST have at least 1 yaku (scoring pattern) to win!</li>
+                </ul>
+            </div>
+
+            <div class="rules-section">
+                <h3>Winning Requirements</h3>
+                <ul>
+                    <li>Complete hand: 4 sets + 1 pair (or special pattern)</li>
+                    <li>Must have at least 1 yaku (scoring element)</li>
+                    <li>Riichi requires closed hand and 1000 point deposit</li>
+                </ul>
+            </div>
+
+            <div class="yaku-list">
+                <h3>Common Yaku</h3>
+
+                <div class="yaku-category">
+                    <h4>1 Han Yaku</h4>
+                    <div class="yaku-item">
+                        <strong>立直 (Riichi)</strong>
+                        <p>Closed hand, declare ready. Pay 1000 points.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>一発 (Ippatsu)</strong>
+                        <p>Win within one turn after riichi, no interruptions.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>門前清自摸和 (Menzen Tsumo)</strong>
+                        <p>Self-draw win with closed hand.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>断幺九 (Tanyao)</strong>
+                        <p>All simples - only 2-8, no terminals or honors.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>平和 (Pinfu)</strong>
+                        <p>All sequences, valueless pair, two-sided wait. Closed only.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>一盃口 (Iipeikou)</strong>
+                        <p>Two identical sequences. Closed only.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>ドラ (Dora)</strong>
+                        <p>Bonus tiles (NOT a yaku by itself, but adds han). Indicator tile shown at start.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>役牌 (Yakuhai)</strong>
+                        <p>Triplet of dragons, seat wind, or round wind.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>嶺上開花 (Rinshan Kaihou)</strong>
+                        <p>Win on replacement tile after kan.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>槍槓 (Chankan)</strong>
+                        <p>Rob a kan (steal opponent's added kan tile).</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>海底摸月 (Haitei)</strong>
+                        <p>Win on last tile draw.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>河底撈魚 (Houtei)</strong>
+                        <p>Win on last discard.</p>
+                    </div>
+                </div>
+
+                <div class="yaku-category">
+                    <h4>2 Han Yaku</h4>
+                    <div class="yaku-item">
+                        <strong>七対子 (Chiitoitsu)</strong>
+                        <p>Seven pairs. Always 25 fu. Closed only.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>対々和 (Toitoi)</strong>
+                        <p>All triplets/quads.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>三暗刻 (Sanankou)</strong>
+                        <p>Three concealed triplets.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>三色同順 (Sanshoku Doujun)</strong>
+                        <p>Same sequence in all three suits. -1 han if open.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>三色同刻 (Sanshoku Doukou)</strong>
+                        <p>Same triplet in all three suits.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>一気通貫 (Ikkitsuukan)</strong>
+                        <p>1-2-3, 4-5-6, 7-8-9 in one suit. -1 han if open.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>混全帯幺九 (Chanta)</strong>
+                        <p>Every set has terminals/honors. -1 han if open.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>三槓子 (Sankantsu)</strong>
+                        <p>Three quads.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>小三元 (Shousangen)</strong>
+                        <p>Two dragon triplets and one dragon pair.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>混老頭 (Honroutou)</strong>
+                        <p>All terminals and honors.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>両立直 (Double Riichi)</strong>
+                        <p>Riichi on first turn. Closed only.</p>
+                    </div>
+                </div>
+
+                <div class="yaku-category">
+                    <h4>3 Han Yaku</h4>
+                    <div class="yaku-item">
+                        <strong>二盃口 (Ryanpeikou)</strong>
+                        <p>Two sets of identical sequences. Closed only.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>純全帯幺九 (Junchan)</strong>
+                        <p>Every set has terminals (no honors). -1 han if open.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>混一色 (Honitsu)</strong>
+                        <p>One suit plus honors. -1 han if open.</p>
+                    </div>
+                </div>
+
+                <div class="yaku-category">
+                    <h4>6 Han Yaku</h4>
+                    <div class="yaku-item">
+                        <strong>清一色 (Chinitsu)</strong>
+                        <p>One suit only. -1 han if open.</p>
+                    </div>
+                </div>
+
+                <div class="yaku-category">
+                    <h4>Yakuman (Limit Hands)</h4>
+                    <div class="yaku-item">
+                        <strong>国士無双 (Kokushi Musou)</strong>
+                        <p>Thirteen Orphans. 13 terminals/honors + pair. Closed only.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>四暗刻 (Suuankou)</strong>
+                        <p>Four concealed triplets. Closed only.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>大三元 (Daisangen)</strong>
+                        <p>Three dragon triplets.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>小四喜 (Shousuushii)</strong>
+                        <p>Three wind triplets and one wind pair.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>大四喜 (Daisuushii)</strong>
+                        <p>Four wind triplets. Double yakuman.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>字一色 (Tsuuiisou)</strong>
+                        <p>All honors (winds and dragons).</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>清老頭 (Chinroutou)</strong>
+                        <p>All terminals (no honors).</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>緑一色 (Ryuuiisou)</strong>
+                        <p>All green tiles (2,3,4,6,8 sou + green dragon).</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>九蓮宝燈 (Chuuren Poutou)</strong>
+                        <p>1112345678999 + any tile of same suit. Closed only.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>四槓子 (Suukantsu)</strong>
+                        <p>Four quads.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>天和 (Tenhou)</strong>
+                        <p>Dealer wins on initial draw.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>地和 (Chiihou)</strong>
+                        <p>Non-dealer wins on first draw.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rules-section">
+                <h3>3-Player (Sanma) Rule Differences</h3>
+                <ul>
+                    <li>Remove all 2-8 man (character) tiles (108 tiles total)</li>
+                    <li>Only use East, South, West winds (no North wind)</li>
+                    <li>Starting points typically 35,000</li>
+                    <li><strong>Scoring:</strong> Han and fu calculations stay the same</li>
+                    <li><strong>Tsumo payments:</strong> Only 2 losers pay instead of 3
+                        <ul>
+                            <li>Dealer wins: Each player pays 2× the amount</li>
+                            <li>Non-dealer wins: Dealer pays 2×, other player pays 1×</li>
+                        </ul>
+                    </li>
+                    <li>North tiles (北) can be treated as bonus tiles in some variants</li>
+                    <li>Use the "3 Players" option in Hand Calculator for correct tsumo payments</li>
+                </ul>
+            </div>
+
+            <div class="rules-section">
+                <h3>Furiten Rule</h3>
+                <p>You cannot declare ron (win on discard) if:</p>
+                <ul>
+                    <li>You previously discarded a tile you can now win on</li>
+                    <li>You skipped a winning tile in the current round (temporary furiten)</li>
+                    <li>You can still win by tsumo (self-draw)</li>
+                </ul>
+            </div>
+
+            <div class="rules-section" style="background: #fff5f5; border-left: 4px solid #e53e3e;">
+                <h3 style="color: #c53030;">⚠️ Chombo (錯和) - Penalty for Invalid Win</h3>
+                <p><strong>What is Chombo?</strong></p>
+                <p>Chombo is a penalty given when a player makes a serious rules violation, most commonly declaring an invalid win.</p>
+
+                <p style="margin-top: 12px;"><strong>Common Chombo Situations:</strong></p>
+                <ul>
+                    <li>Declaring ron/tsumo with no yaku (scoring pattern)</li>
+                    <li>Declaring ron while in furiten</li>
+                    <li>Incorrect hand composition (not a winning pattern)</li>
+                    <li>False riichi declaration</li>
+                    <li>Exposed tiles from hand accidentally</li>
+                </ul>
+
+                <p style="margin-top: 12px;"><strong>Standard Penalty:</strong></p>
+                <ul>
+                    <li><strong>Dealer:</strong> Pays 4,000 points to each other player (12,000 total in 4p, 8,000 in 3p)</li>
+                    <li><strong>Non-dealer:</strong> Pays 4,000 points to each player (12,000 total in 4p, 8,000 in 3p)</li>
+                    <li>Some house rules use 8,000 or 12,000 point penalties instead</li>
+                </ul>
+
+                <p style="margin-top: 12px;"><strong>Important Notes:</strong></p>
+                <ul>
+                    <li>The hand does NOT end after chombo - play continues</li>
+                    <li>The penalized player's dealer turn does NOT rotate</li>
+                    <li>Use the Hand Calculator's furiten check to avoid chombo!</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- TILES TAB -->
+        <div id="tiles-tab" class="tab-content">
+            <h2>Tile Reference Guide</h2>
+
+            <div class="tile-section">
+                <h3>萬子 (Man/Characters) - Western Numbers</h3>
+                <div class="tile-grid">
+                    <div class="tile-card">
+                        <div class="tile-display">🀇</div>
+                        <div class="tile-info">1 Man (One)</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀈</div>
+                        <div class="tile-info">2 Man (Two)</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀉</div>
+                        <div class="tile-info">3 Man (Three)</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀊</div>
+                        <div class="tile-info">4 Man (Four)</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀋</div>
+                        <div class="tile-info">5 Man (Five)</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀌</div>
+                        <div class="tile-info">6 Man (Six)</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀍</div>
+                        <div class="tile-info">7 Man (Seven)</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀎</div>
+                        <div class="tile-info">8 Man (Eight)</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀏</div>
+                        <div class="tile-info">9 Man (Nine)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tile-section">
+                <h3>筒子 (Pin/Circles) - Dots/Circles</h3>
+                <div class="tile-grid">
+                    <div class="tile-card">
+                        <div class="tile-display">🀙</div>
+                        <div class="tile-info">1 Pin</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀚</div>
+                        <div class="tile-info">2 Pin</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀛</div>
+                        <div class="tile-info">3 Pin</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀜</div>
+                        <div class="tile-info">4 Pin</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀝</div>
+                        <div class="tile-info">5 Pin</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀞</div>
+                        <div class="tile-info">6 Pin</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀟</div>
+                        <div class="tile-info">7 Pin</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀠</div>
+                        <div class="tile-info">8 Pin</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀡</div>
+                        <div class="tile-info">9 Pin</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tile-section">
+                <h3>索子 (Sou/Bamboo) - Sticks/Bamboo</h3>
+                <div class="tile-grid">
+                    <div class="tile-card">
+                        <div class="tile-display">🀐</div>
+                        <div class="tile-info">1 Sou</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀑</div>
+                        <div class="tile-info">2 Sou</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀒</div>
+                        <div class="tile-info">3 Sou</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀓</div>
+                        <div class="tile-info">4 Sou</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀔</div>
+                        <div class="tile-info">5 Sou</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀕</div>
+                        <div class="tile-info">6 Sou</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀖</div>
+                        <div class="tile-info">7 Sou</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀗</div>
+                        <div class="tile-info">8 Sou</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀘</div>
+                        <div class="tile-info">9 Sou</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tile-section">
+                <h3>字牌 (Honor Tiles)</h3>
+
+                <h4>Winds (風牌)</h4>
+                <div class="tile-grid">
+                    <div class="tile-card">
+                        <div class="tile-display">🀀</div>
+                        <div class="tile-info">East (Ton)</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀁</div>
+                        <div class="tile-info">South (Nan)</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀂</div>
+                        <div class="tile-info">West (Shaa)</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀃</div>
+                        <div class="tile-info">North (Pei)</div>
+                    </div>
+                </div>
+
+                <h4>Dragons (三元牌)</h4>
+                <div class="tile-grid">
+                    <div class="tile-card">
+                        <div class="tile-display">🀆</div>
+                        <div class="tile-info">White Dragon (Haku)</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀅</div>
+                        <div class="tile-info">Green Dragon (Hatsu)</div>
+                    </div>
+                    <div class="tile-card">
+                        <div class="tile-display">🀄</div>
+                        <div class="tile-info">Red Dragon (Chun)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tile-section">
+                <h3>Point Sticks (点棒)</h3>
+                <div class="stick-reference">
+                    <div class="stick-item">
+                        <strong>100 points</strong> - Small white stick
+                    </div>
+                    <div class="stick-item">
+                        <strong>1,000 points</strong> - Thin stick with black dot
+                    </div>
+                    <div class="stick-item">
+                        <strong>5,000 points</strong> - Medium stick with black line
+                    </div>
+                    <div class="stick-item">
+                        <strong>10,000 points</strong> - Thick long stick
+                    </div>
+                </div>
+            </div>
+
+            <div class="tile-section">
+                <h3>Terminology Quick Reference</h3>
+                <div class="term-grid">
+                    <div class="term-item">
+                        <strong>順子 (Shuntsu)</strong>
+                        <p>Sequence (e.g., 1-2-3)</p>
+                    </div>
+                    <div class="term-item">
+                        <strong>刻子 (Koutsu)</strong>
+                        <p>Triplet (e.g., 5-5-5)</p>
+                    </div>
+                    <div class="term-item">
+                        <strong>槓子 (Kantsu)</strong>
+                        <p>Quad (e.g., 8-8-8-8)</p>
+                    </div>
+                    <div class="term-item">
+                        <strong>雀頭 (Jantou)</strong>
+                        <p>Pair (the head)</p>
+                    </div>
+                    <div class="term-item">
+                        <strong>鳴き (Naki)</strong>
+                        <p>Call/Open hand</p>
+                    </div>
+                    <div class="term-item">
+                        <strong>門前 (Menzen)</strong>
+                        <p>Closed hand</p>
+                    </div>
+                    <div class="term-item">
+                        <strong>聴牌 (Tenpai)</strong>
+                        <p>Ready/Waiting</p>
+                    </div>
+                    <div class="term-item">
+                        <strong>和了 (Agari)</strong>
+                        <p>Win</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
