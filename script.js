@@ -30,12 +30,11 @@ let handState = {
 
 // ===== MULTIPLAYER STATE =====
 let multiplayerState = {
-    peer: null,
-    conn: null,
+    client: null,
     isHost: false,
     roomCode: null,
     connected: false,
-    connections: [],
+    peerIds: [], // Array of connected peer IDs
     playerName: '',
     playerNames: {} // Map of peer IDs to names
 };
@@ -120,16 +119,15 @@ function showInitialChoice() {
     document.getElementById('joinScreen').style.display = 'none';
 
     // Reset state
-    if (multiplayerState.peer) {
-        multiplayerState.peer.destroy();
+    if (multiplayerState.client) {
+        multiplayerState.client.leave();
     }
     multiplayerState = {
-        peer: null,
-        conn: null,
+        client: null,
         isHost: false,
         roomCode: null,
         connected: false,
-        connections: [],
+        peerIds: [],
         playerName: '',
         playerNames: {}
     };
@@ -894,7 +892,7 @@ function getLimitHandName(han) {
 }
 
 // ===== MULTIPLAYER FUNCTIONS =====
-function hostMultiplayerGame() {
+async function hostMultiplayerGame() {
     const hostButton = document.getElementById('hostGame');
     const nameInput = document.getElementById('hostNameInput');
     const playerName = nameInput.value.trim();
@@ -906,7 +904,7 @@ function hostMultiplayerGame() {
     }
 
     // Prevent multiple clicks
-    if (multiplayerState.peer || multiplayerState.isHost) {
+    if (multiplayerState.client || multiplayerState.isHost) {
         alert('Already hosting a game');
         return;
     }
@@ -922,113 +920,83 @@ function hostMultiplayerGame() {
     multiplayerState.roomCode = roomCode;
     multiplayerState.isHost = true;
 
-    // Initialize PeerJS with timeout handling
-    const connectionTimeout = setTimeout(() => {
-        if (!multiplayerState.peer || !multiplayerState.isHost) {
-            console.error('Room creation timed out');
-            if (multiplayerState.peer) {
-                multiplayerState.peer.destroy();
+    try {
+        // Create and connect WebRTC client
+        multiplayerState.client = new WebRTCClient();
+
+        // Set up event handlers
+        multiplayerState.client.onRoomCreated = (code) => {
+            console.log('Room created:', code);
+            multiplayerState.playerNames[multiplayerState.client.peerId] = playerName;
+
+            document.getElementById('roomCode').style.display = 'block';
+            document.querySelector('.code-display').textContent = roomCode;
+
+            const hostStatus = document.getElementById('hostStatus');
+            hostStatus.style.display = 'block';
+            hostStatus.innerHTML = '<p>✅ Room created! Waiting for players...</p>';
+            hostStatus.classList.add('connected');
+
+            hostButton.textContent = 'Room Created';
+
+            updatePlayerList();
+
+            // Show connected players section
+            document.getElementById('connectedPlayers').style.display = 'block';
+        };
+
+        multiplayerState.client.onPeerJoined = (peerId, name) => {
+            console.log('Player joined:', name, peerId);
+            multiplayerState.peerIds.push(peerId);
+            multiplayerState.playerNames[peerId] = name;
+            updatePlayerList();
+
+            const hostStatus = document.getElementById('hostStatus');
+            hostStatus.innerHTML = `<p>✅ ${multiplayerState.peerIds.length} player(s) connected</p>`;
+        };
+
+        multiplayerState.client.onPeerLeft = (peerId) => {
+            console.log('Player left:', peerId);
+            const index = multiplayerState.peerIds.indexOf(peerId);
+            if (index > -1) {
+                multiplayerState.peerIds.splice(index, 1);
             }
-            multiplayerState.peer = null;
-            multiplayerState.isHost = false;
+            delete multiplayerState.playerNames[peerId];
+            updatePlayerList();
+        };
+
+        multiplayerState.client.onMessage = (data, fromPeerId) => {
+            handleMultiplayerMessage(data, fromPeerId);
+        };
+
+        multiplayerState.client.onError = (error) => {
+            console.error('WebRTC error:', error);
+            alert('Connection error: ' + error.message);
             hostButton.disabled = false;
             hostButton.textContent = 'Create Room';
             nameInput.disabled = false;
-            alert('Room creation timed out. Please try again.');
-        }
-    }, 15000); // 15 second timeout
+            multiplayerState.client = null;
+            multiplayerState.isHost = false;
+        };
 
-    multiplayerState.peer = new Peer(roomCode, {
-        config: {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                {
-                    urls: 'turn:a.relay.metered.ca:80',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                },
-                {
-                    urls: 'turn:a.relay.metered.ca:443',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                },
-                {
-                    urls: 'turn:a.relay.metered.ca:443?transport=tcp',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                }
-            ],
-            sdpSemantics: 'unified-plan'
-        },
-        debug: 0 // Reduce console noise
-    });
+        // Connect to signaling server
+        await multiplayerState.client.connect();
 
-    multiplayerState.peer.on('open', (id) => {
-        clearTimeout(connectionTimeout); // Clear timeout on success
-        console.log('Peer initialized with ID:', id);
-        multiplayerState.playerNames[id] = playerName;
+        // Create room
+        multiplayerState.client.createRoom(roomCode, playerName);
 
-        document.getElementById('roomCode').style.display = 'block';
-        document.querySelector('.code-display').textContent = roomCode;
-
-        const hostStatus = document.getElementById('hostStatus');
-        hostStatus.style.display = 'block';
-        hostStatus.innerHTML = '<p>✅ Room created! Waiting for players...</p>';
-        hostStatus.classList.add('connected');
-
-        hostButton.textContent = 'Room Created';
-
-        updatePlayerList();
-
-        // Show connected players section (stay on host screen)
-        document.getElementById('connectedPlayers').style.display = 'block';
-    });
-
-    multiplayerState.peer.on('connection', (conn) => {
-        console.log('Player connected:', conn.peer);
-        multiplayerState.connections.push(conn);
-
-        conn.on('open', () => {
-            // Send current game state
-            conn.send({
-                type: 'gameState',
-                data: gameState
-            });
-
-            // Request player name
-            conn.send({
-                type: 'requestName'
-            });
-        });
-
-        conn.on('data', (data) => {
-            handleMultiplayerMessage(data, conn);
-        });
-
-        conn.on('close', () => {
-            // Remove disconnected player
-            const index = multiplayerState.connections.indexOf(conn);
-            if (index > -1) {
-                multiplayerState.connections.splice(index, 1);
-                delete multiplayerState.playerNames[conn.peer];
-                updatePlayerList();
-            }
-        });
-    });
-
-    multiplayerState.peer.on('error', (err) => {
-        console.error('Peer error:', err);
-        alert('Connection error: ' + err.message);
-        // Re-enable button on error
+    } catch (error) {
+        console.error('Failed to create room:', error);
+        alert('Failed to create room: ' + error.message);
         hostButton.disabled = false;
         hostButton.textContent = 'Create Room';
         nameInput.disabled = false;
-        multiplayerState.peer = null;
+        multiplayerState.client = null;
         multiplayerState.isHost = false;
-    });
+    }
 }
 
-function joinMultiplayerGame() {
+async function joinMultiplayerGame() {
     const roomCodeInput = document.getElementById('joinCodeInput');
     const roomCode = roomCodeInput.value.toUpperCase().trim();
     const joinButton = document.getElementById('joinGame');
@@ -1048,7 +1016,7 @@ function joinMultiplayerGame() {
     }
 
     // Prevent multiple clicks
-    if (multiplayerState.peer || multiplayerState.connected) {
+    if (multiplayerState.client || multiplayerState.connected) {
         alert('Already connecting or connected to a game');
         return;
     }
@@ -1064,99 +1032,53 @@ function joinMultiplayerGame() {
     const joinStatus = document.getElementById('joinStatus');
     joinStatus.innerHTML = '<p>🔄 Connecting to room...</p>';
 
-    // Add timeout for joining
-    const joinTimeout = setTimeout(() => {
-        if (!multiplayerState.connected) {
-            console.error('Join connection timed out');
-            if (multiplayerState.peer) {
-                multiplayerState.peer.destroy();
-            }
-            multiplayerState.peer = null;
-            joinButton.disabled = false;
-            joinButton.textContent = 'Join Game';
-            nameInput.disabled = false;
-            roomCodeInput.disabled = false;
-            joinStatus.innerHTML = '<p>❌ Connection timed out. Please check the room code and try again.</p>';
-        }
-    }, 15000); // 15 second timeout
+    try {
+        // Create and connect WebRTC client
+        multiplayerState.client = new WebRTCClient();
 
-    multiplayerState.peer = new Peer({
-        config: {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                {
-                    urls: 'turn:a.relay.metered.ca:80',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                },
-                {
-                    urls: 'turn:a.relay.metered.ca:443',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                },
-                {
-                    urls: 'turn:a.relay.metered.ca:443?transport=tcp',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                }
-            ],
-            sdpSemantics: 'unified-plan'
-        },
-        debug: 0
-    });
-
-    multiplayerState.peer.on('open', (id) => {
-        console.log('Joining room:', roomCode);
-        const conn = multiplayerState.peer.connect(roomCode, {
-            reliable: true
-        });
-
-        conn.on('open', () => {
-            clearTimeout(joinTimeout); // Clear timeout on successful connection
-            multiplayerState.conn = conn;
+        // Set up event handlers
+        multiplayerState.client.onJoinedRoom = (code) => {
+            console.log('Joined room:', code);
             multiplayerState.connected = true;
 
             joinStatus.innerHTML = '<p>✅ Connected to game!</p>';
             joinStatus.classList.add('connected');
 
-            // Send player name to host
-            conn.send({
-                type: 'playerName',
-                name: playerName
-            });
-
             // Show game setup for guest
             showGameSetup();
-        });
+        };
 
-        conn.on('data', (data) => {
-            handleMultiplayerMessage(data, conn);
-        });
+        multiplayerState.client.onMessage = (data, fromPeerId) => {
+            handleMultiplayerMessage(data, fromPeerId);
+        };
 
-        conn.on('error', (err) => {
-            console.error('Connection error:', err);
-            alert('Failed to connect. Make sure the room code is correct.');
-            // Re-enable inputs on error
+        multiplayerState.client.onError = (error) => {
+            console.error('WebRTC error:', error);
+            alert('Connection error: ' + error.message);
             joinButton.disabled = false;
-            joinButton.textContent = 'Join Room';
+            joinButton.textContent = 'Join Game';
             nameInput.disabled = false;
             roomCodeInput.disabled = false;
-            multiplayerState.peer = null;
+            multiplayerState.client = null;
             joinStatus.innerHTML = '<p>❌ Connection failed</p>';
-        });
-    });
+        };
 
-    multiplayerState.peer.on('error', (err) => {
-        console.error('Peer error:', err);
-        alert('Connection error: ' + err.message);
-        // Re-enable inputs on error
+        // Connect to signaling server
+        await multiplayerState.client.connect();
+
+        // Join room
+        multiplayerState.client.joinRoom(roomCode, playerName);
+
+    } catch (error) {
+        console.error('Failed to join room:', error);
+        alert('Failed to connect: ' + error.message);
         joinButton.disabled = false;
-        joinButton.textContent = 'Join Room';
+        joinButton.textContent = 'Join Game';
         nameInput.disabled = false;
         roomCodeInput.disabled = false;
-        multiplayerState.peer = null;
+        multiplayerState.client = null;
         joinStatus.innerHTML = '<p>❌ Connection failed</p>';
-    });
+    }
 }
 
 function generateRoomCode() {
@@ -1168,7 +1090,7 @@ function generateRoomCode() {
     return code;
 }
 
-function handleMultiplayerMessage(data, conn) {
+function handleMultiplayerMessage(data, fromPeerId) {
     if (data.type === 'gameState') {
         gameState = data.data;
 
@@ -1180,32 +1102,12 @@ function handleMultiplayerMessage(data, conn) {
         }
 
         renderGame();
-    } else if (data.type === 'playerName') {
-        // Store player name
-        multiplayerState.playerNames[conn.peer] = data.name;
-        updatePlayerList();
-
-        const hostStatus = document.getElementById('hostStatus');
-        const playerCount = multiplayerState.connections.length;
-        hostStatus.innerHTML = `<p>✅ ${playerCount} player(s) connected</p>`;
-    } else if (data.type === 'requestName') {
-        // Send our name to host
-        if (multiplayerState.conn) {
-            multiplayerState.conn.send({
-                type: 'playerName',
-                name: multiplayerState.playerName
-            });
-        }
     }
 }
 
 function broadcastGameState() {
-    if (multiplayerState.isHost) {
-        multiplayerState.connections.forEach(conn => {
-            if (conn.open) {
-                conn.send({ type: 'gameState', data: gameState });
-            }
-        });
+    if (multiplayerState.isHost && multiplayerState.client) {
+        multiplayerState.client.broadcast({ type: 'gameState', data: gameState });
     }
 }
 
@@ -1226,10 +1128,10 @@ function updatePlayerList() {
     listEl.appendChild(hostDiv);
 
     // Add other players
-    multiplayerState.connections.forEach((conn) => {
+    multiplayerState.peerIds.forEach((peerId) => {
         const playerDiv = document.createElement('div');
         playerDiv.className = 'connected-player';
-        const playerName = multiplayerState.playerNames[conn.peer] || 'Guest';
+        const playerName = multiplayerState.playerNames[peerId] || 'Guest';
         playerDiv.innerHTML = `<span>${playerName}</span><span class="player-role">GUEST</span>`;
         listEl.appendChild(playerDiv);
     });
@@ -1323,8 +1225,8 @@ function startGameFromHostRoom() {
     });
 
     // Add connected players
-    multiplayerState.connections.forEach((conn, index) => {
-        const playerName = multiplayerState.playerNames[conn.peer] || `Player ${index + 2}`;
+    multiplayerState.peerIds.forEach((peerId, index) => {
+        const playerName = multiplayerState.playerNames[peerId] || `Player ${index + 2}`;
         if (index < gameState.mode - 1) {
             gameState.players.push({
                 name: playerName,
