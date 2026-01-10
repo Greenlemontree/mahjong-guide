@@ -1,8 +1,5 @@
-// WebRTC Client using simple-peer with custom signaling server
-// Auto-detect environment: use production server for GitHub Pages, localhost for local dev
-const SIGNALING_SERVER = window.location.hostname === 'greenlemontree.github.io'
-    ? 'wss://mahjong-signaling-server.onrender.com'  // Production (will update after deployment)
-    : 'ws://localhost:8080';  // Local development
+// WebRTC Client using simple-peer with Firebase as signaling channel (no server needed!)
+// Uses Firebase Realtime Database for signaling - completely free, no account needed
 
 class WebRTCClient {
     constructor() {

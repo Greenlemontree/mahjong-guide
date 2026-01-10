@@ -30,11 +30,12 @@ let handState = {
 
 // ===== MULTIPLAYER STATE =====
 let multiplayerState = {
-    client: null,
+    peer: null,
+    conn: null,
     isHost: false,
     roomCode: null,
     connected: false,
-    peerIds: [], // Array of connected peer IDs
+    connections: [],
     playerName: '',
     playerNames: {} // Map of peer IDs to names
 };
@@ -81,10 +82,10 @@ function setupEventListeners() {
     document.getElementById('backFromHost')?.addEventListener('click', showInitialChoice);
     document.getElementById('backFromJoin')?.addEventListener('click', showInitialChoice);
 
-    // Multiplayer connection
-    document.getElementById('hostGame')?.addEventListener('click', hostMultiplayerGame);
-    document.getElementById('joinGame')?.addEventListener('click', joinMultiplayerGame);
-    document.getElementById('startGameFromHost')?.addEventListener('click', startGameFromHostRoom);
+    // Multiplayer connection - using simple wrapper functions
+    document.getElementById('hostGame')?.addEventListener('click', () => window.SimpleMultiplayer.hostGame());
+    document.getElementById('joinGame')?.addEventListener('click', () => window.SimpleMultiplayer.joinGame());
+    document.getElementById('startGameFromHost')?.addEventListener('click', () => window.SimpleMultiplayer.startFromHost());
 
     // Host mode selection
     document.getElementById('hostMode3p')?.addEventListener('click', () => setHostMode(3));
@@ -1292,6 +1293,19 @@ function handleResultType(resultType) {
     // Score recording feature placeholder - removed alert to avoid interrupting game flow
     // Future: Implement score recording functionality here
     console.log('Score recording not yet implemented for result type:', resultType);
+}
+
+// Bridge functions to simple multiplayer (defined in multiplayer-simple.js)
+function updatePlayerList() {
+    if (window.SimpleMultiplayer) {
+        window.SimpleMultiplayer.updatePlayerList();
+    }
+}
+
+function broadcastGameState() {
+    if (window.SimpleMultiplayer) {
+        window.SimpleMultiplayer.broadcast();
+    }
 }
 
 // Make tiles appear immediately
