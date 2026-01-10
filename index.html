@@ -25,16 +25,61 @@
         </header>
 
         <nav class="tab-nav">
-            <button class="tab-btn active" data-tab="scorer">Scorer</button>
+            <button class="tab-btn active" data-tab="game">Game</button>
             <button class="tab-btn" data-tab="hand-input">Hand Calculator</button>
-            <button class="tab-btn" data-tab="multiplayer">Multiplayer</button>
             <button class="tab-btn" data-tab="rules">Rules & Yaku</button>
             <button class="tab-btn" data-tab="tiles">Tile Guide</button>
         </nav>
 
-        <!-- SCORER TAB -->
-        <div id="scorer-tab" class="tab-content active">
-            <div class="game-setup">
+        <!-- GAME TAB (Integrated Multiplayer + Scorer) -->
+        <div id="game-tab" class="tab-content active">
+            <h2>Multiplayer Game Room</h2>
+
+            <!-- Connection Setup Phase -->
+            <div id="connectionSetup" class="multiplayer-section">
+                <div class="connection-status" id="connectionStatus">
+                    <p>Not connected</p>
+                </div>
+
+                <div class="multiplayer-options">
+                    <div class="option-card">
+                        <h3>Host a Game</h3>
+                        <p>Create a room and share the code with other players</p>
+                        <button id="hostGame" class="btn-primary">Create Room</button>
+                        <div id="roomCode" style="display: none;">
+                            <h4>Room Code:</h4>
+                            <div class="code-display"></div>
+                            <p class="code-instruction">Share this code with other players</p>
+                        </div>
+                    </div>
+
+                    <div class="option-card">
+                        <h3>Join a Game</h3>
+                        <p>Enter the room code from the host</p>
+                        <input type="text" id="joinCodeInput" placeholder="Enter room code" maxlength="6">
+                        <button id="joinGame" class="btn-primary">Join Room</button>
+                    </div>
+                </div>
+
+                <div id="connectedPlayers" style="display: none;">
+                    <h3>Connected Players</h3>
+                    <div id="playerList"></div>
+                </div>
+
+                <div class="multiplayer-info">
+                    <h3>How It Works</h3>
+                    <ul>
+                        <li>One person hosts and gets a 6-digit room code</li>
+                        <li>Other players join using that code</li>
+                        <li>Once connected, start the game to see scores in real-time</li>
+                        <li>Only the host can set up and record hands (others view only)</li>
+                        <li>Works on same WiFi or internet connection</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Game Setup Phase (shown after connection) -->
+            <div id="gameSetup" class="game-setup" style="display: none;">
                 <h2>Game Setup</h2>
                 <div class="starting-points">
                     <label>Starting Points:</label>
@@ -44,9 +89,10 @@
                         <option value="35000">35,000</option>
                     </select>
                 </div>
-                <button id="newGame" class="btn-primary">New Game</button>
+                <button id="newGame" class="btn-primary">Start Game</button>
             </div>
 
+            <!-- Active Game Phase -->
             <div id="gameArea" class="game-area" style="display: none;">
                 <div class="round-info">
                     <div class="round-display">
@@ -204,52 +250,6 @@
             </div>
         </div>
 
-        <!-- MULTIPLAYER TAB -->
-        <div id="multiplayer-tab" class="tab-content">
-            <h2>Local Multiplayer</h2>
-
-            <div class="multiplayer-section">
-                <div class="connection-status" id="connectionStatus">
-                    <p>Not connected</p>
-                </div>
-
-                <div class="multiplayer-options">
-                    <div class="option-card">
-                        <h3>Host a Game</h3>
-                        <p>Create a room and share the code with other players</p>
-                        <button id="hostGame" class="btn-primary">Create Room</button>
-                        <div id="roomCode" style="display: none;">
-                            <h4>Room Code:</h4>
-                            <div class="code-display"></div>
-                            <p class="code-instruction">Share this code with other players</p>
-                        </div>
-                    </div>
-
-                    <div class="option-card">
-                        <h3>Join a Game</h3>
-                        <p>Enter the room code from the host</p>
-                        <input type="text" id="joinCodeInput" placeholder="Enter room code" maxlength="6">
-                        <button id="joinGame" class="btn-primary">Join Room</button>
-                    </div>
-                </div>
-
-                <div id="connectedPlayers" style="display: none;">
-                    <h3>Connected Players</h3>
-                    <div id="playerList"></div>
-                </div>
-
-                <div class="multiplayer-info">
-                    <h3>How It Works</h3>
-                    <ul>
-                        <li>One person hosts and gets a 6-digit room code</li>
-                        <li>Other players join using that code</li>
-                        <li>Everyone sees the same scores in real-time</li>
-                        <li>Only the host can record hands (others view only)</li>
-                        <li>Works on same WiFi or internet connection</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
 
         <!-- RULES TAB -->
         <div id="rules-tab" class="tab-content">
