@@ -57,6 +57,26 @@
                     <input type="text" id="hostNameInput" placeholder="Enter your name" maxlength="20">
                 </div>
 
+                <!-- Game Settings -->
+                <div class="setup-options">
+                    <div class="setup-row">
+                        <label>Number of Players:</label>
+                        <div class="mode-selector">
+                            <button id="hostMode3p" class="mode-btn">3 Players (Sanma)</button>
+                            <button id="hostMode4p" class="mode-btn active">4 Players</button>
+                        </div>
+                    </div>
+
+                    <div class="setup-row">
+                        <label>Starting Points:</label>
+                        <select id="hostStartingPoints">
+                            <option value="25000">25,000 (Standard)</option>
+                            <option value="30000">30,000</option>
+                            <option value="35000">35,000</option>
+                        </select>
+                    </div>
+                </div>
+
                 <button id="hostGame" class="btn-primary">Create Room</button>
 
                 <div id="roomCode" style="display: none;">
@@ -65,13 +85,15 @@
                     <p class="code-instruction">Share this code with other players</p>
                 </div>
 
-                <div class="connection-status" id="hostStatus">
-                    <p>Click "Create Room" to start</p>
+                <div class="connection-status" id="hostStatus" style="display: none;">
+                    <p></p>
                 </div>
 
                 <div id="connectedPlayers" style="display: none;">
                     <h3>Connected Players</h3>
                     <div id="playerList"></div>
+
+                    <button id="startGameFromHost" class="btn-primary btn-large" style="margin-top: 20px;">Start Game</button>
                 </div>
             </div>
 
@@ -309,14 +331,13 @@
                         <li><strong>Dragons 三元:</strong> White, Green, Red, four of each (12 tiles)</li>
                     </ul>
 
-                    <h4>Building the Wall</h4>
+                    <h4>Building the Wall (4-Player)</h4>
                     <ol>
                         <li><strong>Shuffle:</strong> Mix all 136 tiles face-down on the table</li>
-                        <li><strong>Each player builds:</strong> Make a wall of 17 tiles wide × 2 tiles high</li>
-                        <li><strong>For 4 players:</strong> Each player has 34 tiles (17 × 2)</li>
-                        <li><strong>For 3 players (Sanma):</strong> Remove all 2-8 Man tiles first. Each player builds 18 wide × 2 high (36 tiles each)</li>
+                        <li><strong>Each player builds:</strong> Make a wall of 17 tiles wide × 2 tiles high (34 tiles per player)</li>
                         <li><strong>Form square:</strong> Push the four walls together to form a square in the center</li>
                     </ol>
+                    <p><em>For 3-player setup, see the "3-Player Rules" tab</em></p>
 
                     <h4>Breaking the Wall & Starting Hands</h4>
                     <ol>
@@ -553,20 +574,37 @@
 
             <!-- 3-Player Rules Tab -->
             <div id="sanma-rules-tab" class="rules-tab-content">
-                <div class="rules-section">
-                    <h3>3-Player (Sanma) Rules</h3>
+                <div class="rules-section" style="background: #fff8e1; border-left: 4px solid #ffa726;">
+                    <h3 style="color: #e65100;">3-Player (Sanma) Complete Setup Guide</h3>
 
-                    <h4>Setup Differences</h4>
-                    <ul>
-                        <li><strong>Tile removal:</strong> Remove all 2-8 Man (character) tiles before setup (108 tiles total instead of 136)</li>
-                        <li><strong>Winds:</strong> Only use East, South, West winds (no North wind)</li>
+                    <h4>Initial Setup</h4>
+                    <ol>
+                        <li><strong>Tile removal:</strong> Remove all 2-8 Man (character) tiles BEFORE shuffling (108 tiles total instead of 136)</li>
+                        <li><strong>Winds:</strong> Only use East, South, West winds (remove North wind tiles)</li>
+                        <li><strong>Shuffle:</strong> Mix all 108 tiles face-down on the table</li>
                         <li><strong>Wall building:</strong> Each player builds 18 tiles wide × 2 tiles high (36 tiles per player)</li>
+                        <li><strong>Form triangle:</strong> Push the three walls together to form a triangle in the center</li>
                         <li><strong>Starting points:</strong> Typically 35,000 instead of 25,000</li>
-                    </ul>
+                    </ol>
+
+                    <h4>Breaking the Wall & Starting Hands</h4>
+                    <p>Same process as 4-player:</p>
+                    <ol>
+                        <li><strong>Dealer (親):</strong> East player is the starting dealer</li>
+                        <li><strong>Roll dice:</strong> Dealer rolls two dice to determine which wall to break</li>
+                        <li><strong>Count counterclockwise:</strong> Count from dealer to find the wall</li>
+                        <li><strong>Draw tiles:</strong> Dealer draws 4 tiles, then each player in turn
+                            <ul>
+                                <li>Repeat 3 times (everyone has 12 tiles)</li>
+                                <li>Dealer takes 2 more tiles, others take 1 more</li>
+                                <li>Dealer starts with 14 tiles, others with 13 tiles</li>
+                            </ul>
+                        </li>
+                    </ol>
 
                     <h4>Scoring Differences</h4>
                     <ul>
-                        <li><strong>Han and fu calculations:</strong> Stay exactly the same as 4-player</li>
+                        <li><strong>Han and fu calculations:</strong> Exactly the same as 4-player</li>
                         <li><strong>Tsumo payments:</strong> Only 2 losers pay instead of 3
                             <ul>
                                 <li>Dealer wins: Each player pays 2× the amount</li>

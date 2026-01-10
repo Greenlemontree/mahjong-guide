@@ -85,6 +85,11 @@ function setupEventListeners() {
     // Multiplayer connection
     document.getElementById('hostGame')?.addEventListener('click', hostMultiplayerGame);
     document.getElementById('joinGame')?.addEventListener('click', joinMultiplayerGame);
+    document.getElementById('startGameFromHost')?.addEventListener('click', startGameFromHostRoom);
+
+    // Host mode selection
+    document.getElementById('hostMode3p')?.addEventListener('click', () => setHostMode(3));
+    document.getElementById('hostMode4p')?.addEventListener('click', () => setHostMode(4));
 
     // Rules sub-tabs
     document.querySelectorAll('.rules-tab-btn').forEach(btn => {
@@ -93,6 +98,19 @@ function setupEventListeners() {
             switchRulesTab(rulesTab);
         });
     });
+}
+
+function setHostMode(mode) {
+    gameState.mode = mode;
+    document.querySelectorAll('#hostScreen .mode-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`hostMode${mode}p`).classList.add('active');
+
+    const startingPointsSelect = document.getElementById('hostStartingPoints');
+    if (mode === 3) {
+        startingPointsSelect.value = '35000';
+    } else {
+        startingPointsSelect.value = '25000';
+    }
 }
 
 // ===== NAVIGATION FUNCTIONS =====
@@ -904,17 +922,49 @@ function hostMultiplayerGame() {
     multiplayerState.roomCode = roomCode;
     multiplayerState.isHost = true;
 
-    // Initialize PeerJS
+    // Initialize PeerJS with timeout handling
+    const connectionTimeout = setTimeout(() => {
+        if (!multiplayerState.peer || !multiplayerState.isHost) {
+            console.error('Room creation timed out');
+            if (multiplayerState.peer) {
+                multiplayerState.peer.destroy();
+            }
+            multiplayerState.peer = null;
+            multiplayerState.isHost = false;
+            hostButton.disabled = false;
+            hostButton.textContent = 'Create Room';
+            nameInput.disabled = false;
+            alert('Room creation timed out. Please try again.');
+        }
+    }, 15000); // 15 second timeout
+
     multiplayerState.peer = new Peer(roomCode, {
         config: {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        }
+                {
+                    urls: 'turn:a.relay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:a.relay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:a.relay.metered.ca:443?transport=tcp',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                }
+            ],
+            sdpSemantics: 'unified-plan'
+        },
+        debug: 0 // Reduce console noise
     });
 
     multiplayerState.peer.on('open', (id) => {
+        clearTimeout(connectionTimeout); // Clear timeout on success
         console.log('Peer initialized with ID:', id);
         multiplayerState.playerNames[id] = playerName;
 
@@ -922,14 +972,16 @@ function hostMultiplayerGame() {
         document.querySelector('.code-display').textContent = roomCode;
 
         const hostStatus = document.getElementById('hostStatus');
+        hostStatus.style.display = 'block';
         hostStatus.innerHTML = '<p>✅ Room created! Waiting for players...</p>';
         hostStatus.classList.add('connected');
 
         hostButton.textContent = 'Room Created';
 
         updatePlayerList();
-        // Show game setup for host
-        showGameSetup();
+
+        // Show connected players section (stay on host screen)
+        document.getElementById('connectedPlayers').style.display = 'block';
     });
 
     multiplayerState.peer.on('connection', (conn) => {
@@ -1012,20 +1064,55 @@ function joinMultiplayerGame() {
     const joinStatus = document.getElementById('joinStatus');
     joinStatus.innerHTML = '<p>🔄 Connecting to room...</p>';
 
+    // Add timeout for joining
+    const joinTimeout = setTimeout(() => {
+        if (!multiplayerState.connected) {
+            console.error('Join connection timed out');
+            if (multiplayerState.peer) {
+                multiplayerState.peer.destroy();
+            }
+            multiplayerState.peer = null;
+            joinButton.disabled = false;
+            joinButton.textContent = 'Join Game';
+            nameInput.disabled = false;
+            roomCodeInput.disabled = false;
+            joinStatus.innerHTML = '<p>❌ Connection timed out. Please check the room code and try again.</p>';
+        }
+    }, 15000); // 15 second timeout
+
     multiplayerState.peer = new Peer({
         config: {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        }
+                {
+                    urls: 'turn:a.relay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:a.relay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:a.relay.metered.ca:443?transport=tcp',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                }
+            ],
+            sdpSemantics: 'unified-plan'
+        },
+        debug: 0
     });
 
     multiplayerState.peer.on('open', (id) => {
         console.log('Joining room:', roomCode);
-        const conn = multiplayerState.peer.connect(roomCode);
+        const conn = multiplayerState.peer.connect(roomCode, {
+            reliable: true
+        });
 
         conn.on('open', () => {
+            clearTimeout(joinTimeout); // Clear timeout on successful connection
             multiplayerState.conn = conn;
             multiplayerState.connected = true;
 
@@ -1210,6 +1297,54 @@ function startNewGame() {
     broadcastGameState();
 }
 
+function startGameFromHostRoom() {
+    // Read settings from host screen
+    const startingPoints = parseInt(document.getElementById('hostStartingPoints').value);
+
+    // Apply settings to game state
+    gameState.startingPoints = startingPoints;
+    gameState.currentRound = 1;
+    gameState.currentWind = '東';
+    gameState.honba = 0;
+    gameState.riichiSticks = 0;
+    gameState.dealer = 0;
+    gameState.gameStarted = true;
+
+    // Initialize players based on connected players
+    gameState.players = [];
+    const winds = gameState.mode === 3 ? ['東', '南', '西'] : ['東', '南', '西', '北'];
+
+    // Add host as first player
+    gameState.players.push({
+        name: multiplayerState.playerName,
+        wind: winds[0],
+        points: startingPoints,
+        riichi: false
+    });
+
+    // Add connected players
+    multiplayerState.connections.forEach((conn, index) => {
+        const playerName = multiplayerState.playerNames[conn.peer] || `Player ${index + 2}`;
+        if (index < gameState.mode - 1) {
+            gameState.players.push({
+                name: playerName,
+                wind: winds[index + 1],
+                points: startingPoints,
+                riichi: false
+            });
+        }
+    });
+
+    renderGame();
+
+    // Hide host screen, show game area
+    document.getElementById('hostScreen').style.display = 'none';
+    document.getElementById('gameArea').style.display = 'block';
+
+    // Broadcast game start to all players
+    broadcastGameState();
+}
+
 function renderGame() {
     updateRoundDisplay();
     renderPlayerScores();
@@ -1252,7 +1387,9 @@ function renderPlayerScores() {
 }
 
 function handleResultType(resultType) {
-    alert('Score recording feature coming soon! For now, use the Hand Calculator tab to calculate scores for your hands.');
+    // Score recording feature placeholder - removed alert to avoid interrupting game flow
+    // Future: Implement score recording functionality here
+    console.log('Score recording not yet implemented for result type:', resultType);
 }
 
 // Make tiles appear immediately
