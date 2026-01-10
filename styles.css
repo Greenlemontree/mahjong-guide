@@ -548,6 +548,59 @@ header h1 {
     margin-bottom: 8px;
 }
 
+/* Collapsible Rule Categories */
+.rule-category {
+    margin-bottom: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+}
+
+.rule-header {
+    background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
+    color: white;
+    padding: 16px 20px;
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.2em;
+    transition: all 0.3s;
+}
+
+.rule-header:hover {
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+}
+
+.rule-header:active {
+    transform: scale(0.99);
+}
+
+.rule-arrow {
+    font-size: 0.8em;
+    transition: transform 0.3s;
+    display: inline-block;
+}
+
+.rule-header.collapsed .rule-arrow {
+    transform: rotate(-90deg);
+}
+
+.rule-content {
+    max-height: 5000px;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+    padding: 20px;
+}
+
+.rule-content.collapsed {
+    max-height: 0;
+    padding: 0 20px;
+}
+
 /* Yaku List */
 .yaku-list {
     margin-top: 24px;

@@ -1239,6 +1239,21 @@ function handleResultType(resultType) {
     alert('Score recording feature coming soon! For now, use the Hand Calculator tab to calculate scores for your hands.');
 }
 
+// Toggle rule sections
+function toggleRuleSection(header) {
+    const content = header.nextElementSibling;
+
+    if (content.classList.contains('collapsed')) {
+        // Expand
+        content.classList.remove('collapsed');
+        header.classList.remove('collapsed');
+    } else {
+        // Collapse
+        content.classList.add('collapsed');
+        header.classList.add('collapsed');
+    }
+}
+
 // Make tiles appear immediately
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeTilePicker);
