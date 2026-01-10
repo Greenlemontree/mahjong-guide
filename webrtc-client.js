@@ -1,7 +1,8 @@
 // WebRTC Client using simple-peer with custom signaling server
-// Signaling server URL - update this after deployment
-const SIGNALING_SERVER = 'ws://localhost:8080'; // For local testing
-// const SIGNALING_SERVER = 'wss://your-signaling-server.onrender.com'; // For production
+// Auto-detect environment: use production server for GitHub Pages, localhost for local dev
+const SIGNALING_SERVER = window.location.hostname === 'greenlemontree.github.io'
+    ? 'wss://mahjong-signaling-server.onrender.com'  // Production (will update after deployment)
+    : 'ws://localhost:8080';  // Local development
 
 class WebRTCClient {
     constructor() {
