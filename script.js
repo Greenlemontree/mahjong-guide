@@ -199,6 +199,12 @@ function createTileButton(tile, suit, value) {
     btn.dataset.suit = suit;
     btn.dataset.value = value;
 
+    // Add tile count display
+    const countSpan = document.createElement('span');
+    countSpan.className = 'tile-count';
+    countSpan.textContent = '0';
+    btn.appendChild(countSpan);
+
     btn.addEventListener('click', function(e) {
         // If shift key is held and furiten check is on, add to discards
         if (e.shiftKey && handState.checkFuriten) {
@@ -206,14 +212,27 @@ function createTileButton(tile, suit, value) {
             return;
         }
 
+        // Check tile count
+        const key = `${suit}-${value}`;
+        const currentCount = getTileCount(key);
+
+        if (currentCount >= 4) {
+            alert(`Cannot add more than 4 of the same tile!`);
+            return;
+        }
+
         // Otherwise add to hand
-        if (handState.tiles.length < handState.maxTiles && !this.classList.contains('disabled')) {
+        if (handState.tiles.length < handState.maxTiles) {
             addTileToHand(tile, suit, value);
             updateTilePicker();
         }
     });
 
     return btn;
+}
+
+function getTileCount(key) {
+    return handState.tiles.filter(t => `${t.suit}-${t.value}` === key).length;
 }
 
 // ===== HAND BUILDING =====
@@ -341,6 +360,13 @@ function updateTilePicker() {
         const value = btn.dataset.value;
         const key = `${suit}-${value}`;
         const count = tileCounts[key] || 0;
+
+        // Update count display
+        const countSpan = btn.querySelector('.tile-count');
+        if (countSpan) {
+            countSpan.textContent = count;
+            countSpan.style.display = count > 0 ? 'flex' : 'none';
+        }
 
         if (count >= 4) {
             btn.classList.add('disabled');
