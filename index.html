@@ -286,391 +286,342 @@
         <div id="rules-tab" class="tab-content">
             <h2>Rules & Yaku Reference</h2>
 
-            <!-- Beginner's Guide Section -->
-            <div class="rule-category">
-                <h3 class="rule-header" onclick="toggleRuleSection(this)">
-                    <span class="rule-arrow">▼</span> Beginner's Guide: Game Setup
-                </h3>
-                <div class="rule-content">
-                    <div class="rules-section" style="background: #e6fffa; border-left: 4px solid #319795; margin: 0;">
-                        <h4>Tile Set</h4>
-                        <p>A complete Riichi Mahjong set contains 136 tiles:</p>
-                        <ul>
-                            <li><strong>Man (Characters) 萬:</strong> 1-9, four of each (36 tiles)</li>
-                            <li><strong>Pin (Circles) 筒:</strong> 1-9, four of each (36 tiles)</li>
-                            <li><strong>Sou (Bamboo) 索:</strong> 1-9, four of each (36 tiles)</li>
-                            <li><strong>Winds 風:</strong> East, South, West, North, four of each (16 tiles)</li>
-                            <li><strong>Dragons 三元:</strong> White, Green, Red, four of each (12 tiles)</li>
-                        </ul>
+            <!-- Rules Sub-Navigation -->
+            <nav class="rules-tab-nav">
+                <button class="rules-tab-btn active" data-rules-tab="setup">Setup & Basics</button>
+                <button class="rules-tab-btn" data-rules-tab="yaku">Yaku List</button>
+                <button class="rules-tab-btn" data-rules-tab="sanma">3-Player Rules</button>
+                <button class="rules-tab-btn" data-rules-tab="special">Special Rules</button>
+            </nav>
 
-                        <h4>Building the Wall</h4>
-                        <ol>
-                            <li><strong>Shuffle:</strong> Mix all 136 tiles face-down on the table</li>
-                            <li><strong>Each player builds:</strong> Make a wall of 17 tiles wide × 2 tiles high</li>
-                            <li><strong>For 4 players:</strong> Each player has 34 tiles (17 × 2)</li>
-                            <li><strong>For 3 players (Sanma):</strong> Remove all 2-8 Man tiles first. Each player builds 18 wide × 2 high (36 tiles each)</li>
-                            <li><strong>Form square:</strong> Push the four walls together to form a square in the center</li>
-                        </ol>
+            <!-- Setup & Basics Tab -->
+            <div id="setup-rules-tab" class="rules-tab-content active">
+                <div class="rules-section" style="background: #e6fffa; border-left: 4px solid #319795;">
+                    <h3 style="color: #234e52;">Game Setup</h3>
 
-                        <h4>Breaking the Wall & Starting Hands</h4>
-                        <ol>
-                            <li><strong>Dealer (親):</strong> East player is the starting dealer</li>
-                            <li><strong>Roll dice:</strong> Dealer rolls two dice (or use 1-4 to select wall)</li>
-                            <li><strong>Count counterclockwise:</strong> Starting from dealer as 1, count the rolled number to find which wall to break</li>
-                            <li><strong>Break position:</strong> From the right end of that wall, count tiles equal to the dice roll, then break after that tile</li>
-                            <li><strong>Draw tiles:</strong> Starting from the break:
-                                <ul>
-                                    <li>Dealer draws 4 tiles, then each player in turn (counterclockwise)</li>
-                                    <li>Repeat 3 times (everyone has 12 tiles)</li>
-                                    <li>Dealer takes 2 more tiles (1 from top, 1 from bottom of next stack)</li>
-                                    <li>Other players take 1 more tile each</li>
-                                    <li>Dealer starts with 14 tiles, others with 13 tiles</li>
-                                </ul>
-                            </li>
-                        </ol>
+                    <h4>Tile Set</h4>
+                    <p>A complete Riichi Mahjong set contains 136 tiles:</p>
+                    <ul>
+                        <li><strong>Man (Characters) 萬:</strong> 1-9, four of each (36 tiles)</li>
+                        <li><strong>Pin (Circles) 筒:</strong> 1-9, four of each (36 tiles)</li>
+                        <li><strong>Sou (Bamboo) 索:</strong> 1-9, four of each (36 tiles)</li>
+                        <li><strong>Winds 風:</strong> East, South, West, North, four of each (16 tiles)</li>
+                        <li><strong>Dragons 三元:</strong> White, Green, Red, four of each (12 tiles)</li>
+                    </ul>
 
-                        <h4>Dead Wall (王牌)</h4>
-                        <p>The last 14 tiles of the wall are reserved:</p>
-                        <ul>
-                            <li>Last 7 stacks (14 tiles) are not used for normal draws</li>
-                            <li>Used for replacement tiles after Kan (adding to a triplet)</li>
-                            <li>Dora indicator is the 3rd tile from the end (flip it up)</li>
-                        </ul>
+                    <h4>Building the Wall</h4>
+                    <ol>
+                        <li><strong>Shuffle:</strong> Mix all 136 tiles face-down on the table</li>
+                        <li><strong>Each player builds:</strong> Make a wall of 17 tiles wide × 2 tiles high</li>
+                        <li><strong>For 4 players:</strong> Each player has 34 tiles (17 × 2)</li>
+                        <li><strong>For 3 players (Sanma):</strong> Remove all 2-8 Man tiles first. Each player builds 18 wide × 2 high (36 tiles each)</li>
+                        <li><strong>Form square:</strong> Push the four walls together to form a square in the center</li>
+                    </ol>
 
-                        <h4>Game Flow</h4>
-                        <ol>
-                            <li><strong>Dealer's turn:</strong> Dealer discards 1 tile (now has 13)</li>
-                            <li><strong>Players' turns:</strong> Draw 1 tile → Discard 1 tile (counterclockwise)</li>
-                            <li><strong>Calls:</strong> Any player can call Chi (sequence), Pon (triplet), or Kan (quad) on discards</li>
-                            <li><strong>Winning:</strong> First to complete a valid hand (14 tiles = 4 sets + 1 pair) with at least 1 yaku</li>
-                            <li><strong>Exhaustive draw:</strong> If no one wins before the dead wall, hand ends in draw</li>
-                        </ol>
+                    <h4>Breaking the Wall & Starting Hands</h4>
+                    <ol>
+                        <li><strong>Dealer (親):</strong> East player is the starting dealer</li>
+                        <li><strong>Roll dice:</strong> Dealer rolls two dice (or use 1-4 to select wall)</li>
+                        <li><strong>Count counterclockwise:</strong> Starting from dealer as 1, count the rolled number to find which wall to break</li>
+                        <li><strong>Break position:</strong> From the right end of that wall, count tiles equal to the dice roll, then break after that tile</li>
+                        <li><strong>Draw tiles:</strong> Starting from the break:
+                            <ul>
+                                <li>Dealer draws 4 tiles, then each player in turn (counterclockwise)</li>
+                                <li>Repeat 3 times (everyone has 12 tiles)</li>
+                                <li>Dealer takes 2 more tiles (1 from top, 1 from bottom of next stack)</li>
+                                <li>Other players take 1 more tile each</li>
+                                <li>Dealer starts with 14 tiles, others with 13 tiles</li>
+                            </ul>
+                        </li>
+                    </ol>
 
-                        <h4>Basic Winning Hand Structure</h4>
-                        <p><strong>14 tiles total = 4 sets + 1 pair</strong></p>
-                        <ul>
-                            <li><strong>Set:</strong> 3 identical tiles (triplet) OR 3 sequential tiles of same suit (sequence)</li>
-                            <li><strong>Pair:</strong> 2 identical tiles</li>
-                            <li><strong>Special:</strong> Seven Pairs (7 different pairs)</li>
-                            <li><strong>Important:</strong> You MUST have at least 1 yaku (scoring pattern) to win!</li>
-                        </ul>
+                    <h4>Dead Wall (王牌)</h4>
+                    <p>The last 14 tiles of the wall are reserved:</p>
+                    <ul>
+                        <li>Last 7 stacks (14 tiles) are not used for normal draws</li>
+                        <li>Used for replacement tiles after Kan (adding to a triplet)</li>
+                        <li>Dora indicator is the 3rd tile from the end (flip it up)</li>
+                    </ul>
+
+                    <h4>Game Flow</h4>
+                    <ol>
+                        <li><strong>Dealer's turn:</strong> Dealer discards 1 tile (now has 13)</li>
+                        <li><strong>Players' turns:</strong> Draw 1 tile → Discard 1 tile (counterclockwise)</li>
+                        <li><strong>Calls:</strong> Any player can call Chi (sequence), Pon (triplet), or Kan (quad) on discards</li>
+                        <li><strong>Winning:</strong> First to complete a valid hand (14 tiles = 4 sets + 1 pair) with at least 1 yaku</li>
+                        <li><strong>Exhaustive draw:</strong> If no one wins before the dead wall, hand ends in draw</li>
+                    </ol>
+
+                    <h4>Basic Winning Hand Structure</h4>
+                    <p><strong>14 tiles total = 4 sets + 1 pair</strong></p>
+                    <ul>
+                        <li><strong>Set:</strong> 3 identical tiles (triplet) OR 3 sequential tiles of same suit (sequence)</li>
+                        <li><strong>Pair:</strong> 2 identical tiles</li>
+                        <li><strong>Special:</strong> Seven Pairs (7 different pairs)</li>
+                        <li><strong>Important:</strong> You MUST have at least 1 yaku (scoring pattern) to win!</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h3>Winning Requirements</h3>
+                    <ul>
+                        <li>Complete hand: 4 sets + 1 pair (or special pattern)</li>
+                        <li>Must have at least 1 yaku (scoring element)</li>
+                        <li>Riichi requires closed hand and 1000 point deposit</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Yaku List Tab -->
+            <div id="yaku-rules-tab" class="rules-tab-content">
+                <div class="yaku-category">
+                    <h4>1 Han Yaku (Common Patterns)</h4>
+                    <div class="yaku-item">
+                        <strong>立直 (Riichi)</strong>
+                        <p>Closed hand, declare ready. Pay 1000 points.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>一発 (Ippatsu)</strong>
+                        <p>Win within one turn after riichi, no interruptions.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>門前清自摸和 (Menzen Tsumo)</strong>
+                        <p>Self-draw win with closed hand.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>断幺九 (Tanyao)</strong>
+                        <p>All simples - only 2-8, no terminals or honors.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>平和 (Pinfu)</strong>
+                        <p>All sequences, valueless pair, two-sided wait. Closed only.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>一盃口 (Iipeikou)</strong>
+                        <p>Two identical sequences. Closed only.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>ドラ (Dora)</strong>
+                        <p>Bonus tiles (NOT a yaku by itself, but adds han). Indicator tile shown at start.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>役牌 (Yakuhai)</strong>
+                        <p>Triplet of dragons, seat wind, or round wind.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>嶺上開花 (Rinshan Kaihou)</strong>
+                        <p>Win on replacement tile after kan.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>槍槓 (Chankan)</strong>
+                        <p>Rob a kan (steal opponent's added kan tile).</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>海底摸月 (Haitei)</strong>
+                        <p>Win on last tile draw.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>河底撈魚 (Houtei)</strong>
+                        <p>Win on last discard.</p>
+                    </div>
+                </div>
+
+                <div class="yaku-category">
+                    <h4>2 Han Yaku</h4>
+                    <div class="yaku-item">
+                        <strong>七対子 (Chiitoitsu)</strong>
+                        <p>Seven pairs. Always 25 fu. Closed only.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>対々和 (Toitoi)</strong>
+                        <p>All triplets/quads.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>三暗刻 (Sanankou)</strong>
+                        <p>Three concealed triplets.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>三色同順 (Sanshoku Doujun)</strong>
+                        <p>Same sequence in all three suits. -1 han if open.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>三色同刻 (Sanshoku Doukou)</strong>
+                        <p>Same triplet in all three suits.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>一気通貫 (Ikkitsuukan)</strong>
+                        <p>1-2-3, 4-5-6, 7-8-9 in one suit. -1 han if open.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>混全帯幺九 (Chanta)</strong>
+                        <p>Every set has terminals/honors. -1 han if open.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>三槓子 (Sankantsu)</strong>
+                        <p>Three quads.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>小三元 (Shousangen)</strong>
+                        <p>Two dragon triplets and one dragon pair.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>混老頭 (Honroutou)</strong>
+                        <p>All terminals and honors.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>両立直 (Double Riichi)</strong>
+                        <p>Riichi on first turn. Closed only.</p>
+                    </div>
+                </div>
+
+                <div class="yaku-category">
+                    <h4>3 Han Yaku</h4>
+                    <div class="yaku-item">
+                        <strong>二盃口 (Ryanpeikou)</strong>
+                        <p>Two sets of identical sequences. Closed only.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>純全帯幺九 (Junchan)</strong>
+                        <p>Every set has terminals (no honors). -1 han if open.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>混一色 (Honitsu)</strong>
+                        <p>One suit plus honors. -1 han if open.</p>
+                    </div>
+                </div>
+
+                <div class="yaku-category">
+                    <h4>6 Han Yaku</h4>
+                    <div class="yaku-item">
+                        <strong>清一色 (Chinitsu)</strong>
+                        <p>One suit only. -1 han if open.</p>
+                    </div>
+                </div>
+
+                <div class="yaku-category">
+                    <h4>Yakuman (Limit Hands)</h4>
+                    <div class="yaku-item">
+                        <strong>国士無双 (Kokushi Musou)</strong>
+                        <p>Thirteen Orphans. 13 terminals/honors + pair. Closed only.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>四暗刻 (Suuankou)</strong>
+                        <p>Four concealed triplets. Closed only.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>大三元 (Daisangen)</strong>
+                        <p>Three dragon triplets.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>小四喜 (Shousuushii)</strong>
+                        <p>Three wind triplets and one wind pair.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>大四喜 (Daisuushii)</strong>
+                        <p>Four wind triplets. Double yakuman.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>字一色 (Tsuuiisou)</strong>
+                        <p>All honors (winds and dragons).</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>清老頭 (Chinroutou)</strong>
+                        <p>All terminals (no honors).</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>緑一色 (Ryuuiisou)</strong>
+                        <p>All green tiles (2,3,4,6,8 sou + green dragon).</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>九蓮宝燈 (Chuuren Poutou)</strong>
+                        <p>1112345678999 + any tile of same suit. Closed only.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>四槓子 (Suukantsu)</strong>
+                        <p>Four quads.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>天和 (Tenhou)</strong>
+                        <p>Dealer wins on initial draw.</p>
+                    </div>
+                    <div class="yaku-item">
+                        <strong>地和 (Chiihou)</strong>
+                        <p>Non-dealer wins on first draw.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Winning Requirements Section -->
-            <div class="rule-category">
-                <h3 class="rule-header" onclick="toggleRuleSection(this)">
-                    <span class="rule-arrow">▼</span> Winning Requirements
-                </h3>
-                <div class="rule-content">
-                    <div class="rules-section" style="margin: 0;">
-                        <ul>
-                            <li>Complete hand: 4 sets + 1 pair (or special pattern)</li>
-                            <li>Must have at least 1 yaku (scoring element)</li>
-                            <li>Riichi requires closed hand and 1000 point deposit</li>
-                        </ul>
-                    </div>
+            <!-- 3-Player Rules Tab -->
+            <div id="sanma-rules-tab" class="rules-tab-content">
+                <div class="rules-section">
+                    <h3>3-Player (Sanma) Rules</h3>
+
+                    <h4>Setup Differences</h4>
+                    <ul>
+                        <li><strong>Tile removal:</strong> Remove all 2-8 Man (character) tiles before setup (108 tiles total instead of 136)</li>
+                        <li><strong>Winds:</strong> Only use East, South, West winds (no North wind)</li>
+                        <li><strong>Wall building:</strong> Each player builds 18 tiles wide × 2 tiles high (36 tiles per player)</li>
+                        <li><strong>Starting points:</strong> Typically 35,000 instead of 25,000</li>
+                    </ul>
+
+                    <h4>Scoring Differences</h4>
+                    <ul>
+                        <li><strong>Han and fu calculations:</strong> Stay exactly the same as 4-player</li>
+                        <li><strong>Tsumo payments:</strong> Only 2 losers pay instead of 3
+                            <ul>
+                                <li>Dealer wins: Each player pays 2× the amount</li>
+                                <li>Non-dealer wins: Dealer pays 2×, other player pays 1×</li>
+                            </ul>
+                        </li>
+                        <li><strong>North tiles (北):</strong> Can be treated as bonus tiles in some variants</li>
+                    </ul>
+
+                    <p style="margin-top: 12px;"><strong>Pro tip:</strong> Use the "3 Players" option in Hand Calculator for correct tsumo payments!</p>
                 </div>
             </div>
 
-            <!-- 1 Han Yaku Section -->
-            <div class="rule-category">
-                <h3 class="rule-header" onclick="toggleRuleSection(this)">
-                    <span class="rule-arrow">▼</span> 1 Han Yaku (Common Patterns)
-                </h3>
-                <div class="rule-content">
-                    <div class="yaku-category" style="margin: 0;">
-                        <div class="yaku-item">
-                            <strong>立直 (Riichi)</strong>
-                            <p>Closed hand, declare ready. Pay 1000 points.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>一発 (Ippatsu)</strong>
-                            <p>Win within one turn after riichi, no interruptions.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>門前清自摸和 (Menzen Tsumo)</strong>
-                            <p>Self-draw win with closed hand.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>断幺九 (Tanyao)</strong>
-                            <p>All simples - only 2-8, no terminals or honors.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>平和 (Pinfu)</strong>
-                            <p>All sequences, valueless pair, two-sided wait. Closed only.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>一盃口 (Iipeikou)</strong>
-                            <p>Two identical sequences. Closed only.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>ドラ (Dora)</strong>
-                            <p>Bonus tiles (NOT a yaku by itself, but adds han). Indicator tile shown at start.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>役牌 (Yakuhai)</strong>
-                            <p>Triplet of dragons, seat wind, or round wind.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>嶺上開花 (Rinshan Kaihou)</strong>
-                            <p>Win on replacement tile after kan.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>槍槓 (Chankan)</strong>
-                            <p>Rob a kan (steal opponent's added kan tile).</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>海底摸月 (Haitei)</strong>
-                            <p>Win on last tile draw.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>河底撈魚 (Houtei)</strong>
-                            <p>Win on last discard.</p>
-                        </div>
-                    </div>
+            <!-- Special Rules Tab -->
+            <div id="special-rules-tab" class="rules-tab-content">
+                <div class="rules-section">
+                    <h3>Furiten Rule</h3>
+                    <p>You cannot declare ron (win on discard) if:</p>
+                    <ul>
+                        <li>You previously discarded a tile you can now win on</li>
+                        <li>You skipped a winning tile in the current round (temporary furiten)</li>
+                        <li>You can still win by tsumo (self-draw)</li>
+                    </ul>
                 </div>
-            </div>
 
-            <!-- 2 Han Yaku Section -->
-            <div class="rule-category">
-                <h3 class="rule-header" onclick="toggleRuleSection(this)">
-                    <span class="rule-arrow">▼</span> 2 Han Yaku
-                </h3>
-                <div class="rule-content">
-                    <div class="yaku-category" style="margin: 0;">
-                        <div class="yaku-item">
-                            <strong>七対子 (Chiitoitsu)</strong>
-                            <p>Seven pairs. Always 25 fu. Closed only.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>対々和 (Toitoi)</strong>
-                            <p>All triplets/quads.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>三暗刻 (Sanankou)</strong>
-                            <p>Three concealed triplets.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>三色同順 (Sanshoku Doujun)</strong>
-                            <p>Same sequence in all three suits. -1 han if open.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>三色同刻 (Sanshoku Doukou)</strong>
-                            <p>Same triplet in all three suits.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>一気通貫 (Ikkitsuukan)</strong>
-                            <p>1-2-3, 4-5-6, 7-8-9 in one suit. -1 han if open.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>混全帯幺九 (Chanta)</strong>
-                            <p>Every set has terminals/honors. -1 han if open.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>三槓子 (Sankantsu)</strong>
-                            <p>Three quads.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>小三元 (Shousangen)</strong>
-                            <p>Two dragon triplets and one dragon pair.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>混老頭 (Honroutou)</strong>
-                            <p>All terminals and honors.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>両立直 (Double Riichi)</strong>
-                            <p>Riichi on first turn. Closed only.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <div class="rules-section" style="background: #fff5f5; border-left: 4px solid #e53e3e;">
+                    <h3 style="color: #c53030;">Chombo (錯和) - Penalty for Invalid Win</h3>
+                    <p><strong>What is Chombo?</strong></p>
+                    <p>Chombo is a penalty given when a player makes a serious rules violation, most commonly declaring an invalid win.</p>
 
-            <!-- 3 Han Yaku Section -->
-            <div class="rule-category">
-                <h3 class="rule-header" onclick="toggleRuleSection(this)">
-                    <span class="rule-arrow">▼</span> 3 Han Yaku
-                </h3>
-                <div class="rule-content">
-                    <div class="yaku-category" style="margin: 0;">
-                        <div class="yaku-item">
-                            <strong>二盃口 (Ryanpeikou)</strong>
-                            <p>Two sets of identical sequences. Closed only.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>純全帯幺九 (Junchan)</strong>
-                            <p>Every set has terminals (no honors). -1 han if open.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>混一色 (Honitsu)</strong>
-                            <p>One suit plus honors. -1 han if open.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    <p style="margin-top: 12px;"><strong>Common Chombo Situations:</strong></p>
+                    <ul>
+                        <li>Declaring ron/tsumo with no yaku (scoring pattern)</li>
+                        <li>Declaring ron while in furiten</li>
+                        <li>Incorrect hand composition (not a winning pattern)</li>
+                        <li>False riichi declaration</li>
+                        <li>Exposed tiles from hand accidentally</li>
+                    </ul>
 
-            <!-- 6 Han Yaku Section -->
-            <div class="rule-category">
-                <h3 class="rule-header" onclick="toggleRuleSection(this)">
-                    <span class="rule-arrow">▼</span> 6 Han Yaku
-                </h3>
-                <div class="rule-content">
-                    <div class="yaku-category" style="margin: 0;">
-                        <div class="yaku-item">
-                            <strong>清一色 (Chinitsu)</strong>
-                            <p>One suit only. -1 han if open.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    <p style="margin-top: 12px;"><strong>Standard Penalty:</strong></p>
+                    <ul>
+                        <li><strong>Dealer:</strong> Pays 4,000 points to each other player (12,000 total in 4p, 8,000 in 3p)</li>
+                        <li><strong>Non-dealer:</strong> Pays 4,000 points to each player (12,000 total in 4p, 8,000 in 3p)</li>
+                        <li>Some house rules use 8,000 or 12,000 point penalties instead</li>
+                    </ul>
 
-            <!-- Yakuman Section -->
-            <div class="rule-category">
-                <h3 class="rule-header" onclick="toggleRuleSection(this)">
-                    <span class="rule-arrow">▼</span> Yakuman (Limit Hands)
-                </h3>
-                <div class="rule-content">
-                    <div class="yaku-category" style="margin: 0;">
-                        <div class="yaku-item">
-                            <strong>国士無双 (Kokushi Musou)</strong>
-                            <p>Thirteen Orphans. 13 terminals/honors + pair. Closed only.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>四暗刻 (Suuankou)</strong>
-                            <p>Four concealed triplets. Closed only.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>大三元 (Daisangen)</strong>
-                            <p>Three dragon triplets.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>小四喜 (Shousuushii)</strong>
-                            <p>Three wind triplets and one wind pair.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>大四喜 (Daisuushii)</strong>
-                            <p>Four wind triplets. Double yakuman.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>字一色 (Tsuuiisou)</strong>
-                            <p>All honors (winds and dragons).</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>清老頭 (Chinroutou)</strong>
-                            <p>All terminals (no honors).</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>緑一色 (Ryuuiisou)</strong>
-                            <p>All green tiles (2,3,4,6,8 sou + green dragon).</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>九蓮宝燈 (Chuuren Poutou)</strong>
-                            <p>1112345678999 + any tile of same suit. Closed only.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>四槓子 (Suukantsu)</strong>
-                            <p>Four quads.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>天和 (Tenhou)</strong>
-                            <p>Dealer wins on initial draw.</p>
-                        </div>
-                        <div class="yaku-item">
-                            <strong>地和 (Chiihou)</strong>
-                            <p>Non-dealer wins on first draw.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3-Player Rules Section -->
-            <div class="rule-category">
-                <h3 class="rule-header" onclick="toggleRuleSection(this)">
-                    <span class="rule-arrow">▼</span> 3-Player (Sanma) Rules
-                </h3>
-                <div class="rule-content">
-                    <div class="rules-section" style="margin: 0;">
-                        <h4>Setup Differences</h4>
-                        <ul>
-                            <li><strong>Tile removal:</strong> Remove all 2-8 Man (character) tiles before setup (108 tiles total instead of 136)</li>
-                            <li><strong>Winds:</strong> Only use East, South, West winds (no North wind)</li>
-                            <li><strong>Wall building:</strong> Each player builds 18 tiles wide × 2 tiles high (36 tiles per player)</li>
-                            <li><strong>Starting points:</strong> Typically 35,000 instead of 25,000</li>
-                        </ul>
-
-                        <h4>Scoring Differences</h4>
-                        <ul>
-                            <li><strong>Han and fu calculations:</strong> Stay exactly the same as 4-player</li>
-                            <li><strong>Tsumo payments:</strong> Only 2 losers pay instead of 3
-                                <ul>
-                                    <li>Dealer wins: Each player pays 2× the amount</li>
-                                    <li>Non-dealer wins: Dealer pays 2×, other player pays 1×</li>
-                                </ul>
-                            </li>
-                            <li><strong>North tiles (北):</strong> Can be treated as bonus tiles in some variants</li>
-                        </ul>
-
-                        <p style="margin-top: 12px;"><strong>Pro tip:</strong> Use the "3 Players" option in Hand Calculator for correct tsumo payments!</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Furiten Rule Section -->
-            <div class="rule-category">
-                <h3 class="rule-header" onclick="toggleRuleSection(this)">
-                    <span class="rule-arrow">▼</span> Furiten Rule
-                </h3>
-                <div class="rule-content">
-                    <div class="rules-section" style="margin: 0;">
-                        <p>You cannot declare ron (win on discard) if:</p>
-                        <ul>
-                            <li>You previously discarded a tile you can now win on</li>
-                            <li>You skipped a winning tile in the current round (temporary furiten)</li>
-                            <li>You can still win by tsumo (self-draw)</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chombo Section -->
-            <div class="rule-category">
-                <h3 class="rule-header" onclick="toggleRuleSection(this)">
-                    <span class="rule-arrow">▼</span> Chombo (Penalty for Invalid Win)
-                </h3>
-                <div class="rule-content">
-                    <div class="rules-section" style="background: #fff5f5; border-left: 4px solid #e53e3e; margin: 0;">
-                        <p><strong>What is Chombo?</strong></p>
-                        <p>Chombo is a penalty given when a player makes a serious rules violation, most commonly declaring an invalid win.</p>
-
-                        <p style="margin-top: 12px;"><strong>Common Chombo Situations:</strong></p>
-                        <ul>
-                            <li>Declaring ron/tsumo with no yaku (scoring pattern)</li>
-                            <li>Declaring ron while in furiten</li>
-                            <li>Incorrect hand composition (not a winning pattern)</li>
-                            <li>False riichi declaration</li>
-                            <li>Exposed tiles from hand accidentally</li>
-                        </ul>
-
-                        <p style="margin-top: 12px;"><strong>Standard Penalty:</strong></p>
-                        <ul>
-                            <li><strong>Dealer:</strong> Pays 4,000 points to each other player (12,000 total in 4p, 8,000 in 3p)</li>
-                            <li><strong>Non-dealer:</strong> Pays 4,000 points to each player (12,000 total in 4p, 8,000 in 3p)</li>
-                            <li>Some house rules use 8,000 or 12,000 point penalties instead</li>
-                        </ul>
-
-                        <p style="margin-top: 12px;"><strong>Important Notes:</strong></p>
-                        <ul>
-                            <li>The hand does NOT end after chombo - play continues</li>
-                            <li>The penalized player's dealer turn does NOT rotate</li>
-                            <li>Use the Hand Calculator's furiten check to avoid chombo!</li>
-                        </ul>
-                    </div>
+                    <p style="margin-top: 12px;"><strong>Important Notes:</strong></p>
+                    <ul>
+                        <li>The hand does NOT end after chombo - play continues</li>
+                        <li>The penalized player's dealer turn does NOT rotate</li>
+                        <li>Use the Hand Calculator's furiten check to avoid chombo!</li>
+                    </ul>
                 </div>
             </div>
         </div>
-
         <!-- TILES TAB -->
         <div id="tiles-tab" class="tab-content">
             <h2>Tile Reference Guide</h2>

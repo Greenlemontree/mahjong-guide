@@ -4,7 +4,7 @@ const TILES = {
     pin: ['🀙', '🀚', '🀛', '🀜', '🀝', '🀞', '🀟', '🀠', '🀡'],
     sou: ['🀐', '🀑', '🀒', '🀓', '🀔', '🀕', '🀖', '🀗', '🀘'],
     winds: ['🀀', '🀁', '🀂', '🀃'], // East, South, West, North
-    dragons: ['🀆', '🀅', '🀄'] // White, Green, Red
+    dragons: ['🀆', '🀅', '中'] // White, Green, Red (using 中 for red dragon)
 };
 
 // ===== GAME STATE =====
@@ -85,6 +85,14 @@ function setupEventListeners() {
     // Multiplayer connection
     document.getElementById('hostGame')?.addEventListener('click', hostMultiplayerGame);
     document.getElementById('joinGame')?.addEventListener('click', joinMultiplayerGame);
+
+    // Rules sub-tabs
+    document.querySelectorAll('.rules-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const rulesTab = btn.dataset.rulesTab;
+            switchRulesTab(rulesTab);
+        });
+    });
 }
 
 // ===== NAVIGATION FUNCTIONS =====
@@ -128,6 +136,14 @@ function switchTab(tabName) {
 
     document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
     document.getElementById(`${tabName}-tab`).classList.add('active');
+}
+
+function switchRulesTab(rulesTabName) {
+    document.querySelectorAll('.rules-tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.rules-tab-content').forEach(content => content.classList.remove('active'));
+
+    document.querySelector(`[data-rules-tab="${rulesTabName}"]`).classList.add('active');
+    document.getElementById(`${rulesTabName}-rules-tab`).classList.add('active');
 }
 
 // ===== MODE MANAGEMENT =====
@@ -1237,21 +1253,6 @@ function renderPlayerScores() {
 
 function handleResultType(resultType) {
     alert('Score recording feature coming soon! For now, use the Hand Calculator tab to calculate scores for your hands.');
-}
-
-// Toggle rule sections
-function toggleRuleSection(header) {
-    const content = header.nextElementSibling;
-
-    if (content.classList.contains('collapsed')) {
-        // Expand
-        content.classList.remove('collapsed');
-        header.classList.remove('collapsed');
-    } else {
-        // Collapse
-        content.classList.add('collapsed');
-        header.classList.add('collapsed');
-    }
 }
 
 // Make tiles appear immediately

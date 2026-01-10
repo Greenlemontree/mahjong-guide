@@ -548,57 +548,48 @@ header h1 {
     margin-bottom: 8px;
 }
 
-/* Collapsible Rule Categories */
-.rule-category {
-    margin-bottom: 16px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    overflow: hidden;
+/* Rules Tab Navigation */
+.rules-tab-nav {
+    display: flex;
+    background: #edf2f7;
+    border-bottom: 2px solid #cbd5e0;
+    border-radius: 8px 8px 0 0;
+    overflow-x: auto;
+    margin-bottom: 24px;
+}
+
+.rules-tab-btn {
+    flex: 1;
+    padding: 14px 16px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.95em;
+    color: #4a5568;
+    transition: all 0.3s;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    min-width: fit-content;
+}
+
+.rules-tab-btn:hover {
+    background: #e2e8f0;
+    color: #2d3748;
+}
+
+.rules-tab-btn.active {
+    color: #2c5282;
+    border-bottom-color: #2c5282;
+    font-weight: 600;
     background: white;
 }
 
-.rule-header {
-    background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
-    color: white;
-    padding: 16px 20px;
-    margin: 0;
-    cursor: pointer;
-    user-select: none;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 1.2em;
-    transition: all 0.3s;
+.rules-tab-content {
+    display: none;
 }
 
-.rule-header:hover {
-    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
-}
-
-.rule-header:active {
-    transform: scale(0.99);
-}
-
-.rule-arrow {
-    font-size: 0.8em;
-    transition: transform 0.3s;
-    display: inline-block;
-}
-
-.rule-header.collapsed .rule-arrow {
-    transform: rotate(-90deg);
-}
-
-.rule-content {
-    max-height: 5000px;
-    overflow: hidden;
-    transition: max-height 0.4s ease-out, padding 0.4s ease-out;
-    padding: 20px;
-}
-
-.rule-content.collapsed {
-    max-height: 0;
-    padding: 0 20px;
+.rules-tab-content.active {
+    display: block;
 }
 
 /* Yaku List */
