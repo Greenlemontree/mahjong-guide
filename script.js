@@ -43,7 +43,6 @@ let multiplayerState = {
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
-    initializeTilePicker();
     updateModeDisplay();
 });
 
@@ -159,6 +158,9 @@ function initializeTilePicker() {
     const honorContainer = document.getElementById('honorTiles');
 
     if (!manContainer) return;
+
+    // Guard: If tiles already exist, don't add them again
+    if (manContainer.children.length > 0) return;
 
     // Man tiles
     TILES.man.forEach((tile, index) => {
