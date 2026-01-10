@@ -35,7 +35,9 @@ let multiplayerState = {
     isHost: false,
     roomCode: null,
     connected: false,
-    connections: []
+    connections: [],
+    playerName: '',
+    playerNames: {} // Map of peer IDs to names
 };
 
 // ===== INITIALIZATION =====
@@ -75,9 +77,49 @@ function setupEventListeners() {
     document.getElementById('checkFuriten')?.addEventListener('change', toggleFuritenCheck);
     document.getElementById('chomboBtn')?.addEventListener('click', declareChombo);
 
-    // Multiplayer
+    // Multiplayer navigation
+    document.getElementById('chooseHost')?.addEventListener('click', showHostScreen);
+    document.getElementById('chooseJoin')?.addEventListener('click', showJoinScreen);
+    document.getElementById('backFromHost')?.addEventListener('click', showInitialChoice);
+    document.getElementById('backFromJoin')?.addEventListener('click', showInitialChoice);
+
+    // Multiplayer connection
     document.getElementById('hostGame')?.addEventListener('click', hostMultiplayerGame);
     document.getElementById('joinGame')?.addEventListener('click', joinMultiplayerGame);
+}
+
+// ===== NAVIGATION FUNCTIONS =====
+function showInitialChoice() {
+    document.getElementById('initialChoice').style.display = 'block';
+    document.getElementById('hostScreen').style.display = 'none';
+    document.getElementById('joinScreen').style.display = 'none';
+
+    // Reset state
+    if (multiplayerState.peer) {
+        multiplayerState.peer.destroy();
+    }
+    multiplayerState = {
+        peer: null,
+        conn: null,
+        isHost: false,
+        roomCode: null,
+        connected: false,
+        connections: [],
+        playerName: '',
+        playerNames: {}
+    };
+}
+
+function showHostScreen() {
+    document.getElementById('initialChoice').style.display = 'none';
+    document.getElementById('hostScreen').style.display = 'block';
+    document.getElementById('joinScreen').style.display = 'none';
+}
+
+function showJoinScreen() {
+    document.getElementById('initialChoice').style.display = 'none';
+    document.getElementById('hostScreen').style.display = 'none';
+    document.getElementById('joinScreen').style.display = 'block';
 }
 
 // ===== TAB SWITCHING =====
@@ -792,6 +834,14 @@ function getLimitHandName(han) {
 // ===== MULTIPLAYER FUNCTIONS =====
 function hostMultiplayerGame() {
     const hostButton = document.getElementById('hostGame');
+    const nameInput = document.getElementById('hostNameInput');
+    const playerName = nameInput.value.trim();
+
+    if (!playerName) {
+        alert('Please enter your name');
+        nameInput.focus();
+        return;
+    }
 
     // Prevent multiple clicks
     if (multiplayerState.peer || multiplayerState.isHost) {
@@ -802,6 +852,9 @@ function hostMultiplayerGame() {
     // Disable button
     hostButton.disabled = true;
     hostButton.textContent = 'Creating Room...';
+    nameInput.disabled = true;
+
+    multiplayerState.playerName = playerName;
 
     const roomCode = generateRoomCode();
     multiplayerState.roomCode = roomCode;
@@ -819,11 +872,18 @@ function hostMultiplayerGame() {
 
     multiplayerState.peer.on('open', (id) => {
         console.log('Peer initialized with ID:', id);
+        multiplayerState.playerNames[id] = playerName;
+
         document.getElementById('roomCode').style.display = 'block';
         document.querySelector('.code-display').textContent = roomCode;
-        updateConnectionStatus('Waiting for players to join...');
+
+        const hostStatus = document.getElementById('hostStatus');
+        hostStatus.innerHTML = '<p>✅ Room created! Waiting for players...</p>';
+        hostStatus.classList.add('connected');
+
         hostButton.textContent = 'Room Created';
 
+        updatePlayerList();
         // Show game setup for host
         showGameSetup();
     });
@@ -833,13 +893,30 @@ function hostMultiplayerGame() {
         multiplayerState.connections.push(conn);
 
         conn.on('open', () => {
-            conn.send({ type: 'gameState', data: gameState });
-            updateConnectionStatus(`${multiplayerState.connections.length} player(s) connected`);
-            updatePlayerList();
+            // Send current game state
+            conn.send({
+                type: 'gameState',
+                data: gameState
+            });
+
+            // Request player name
+            conn.send({
+                type: 'requestName'
+            });
         });
 
         conn.on('data', (data) => {
             handleMultiplayerMessage(data, conn);
+        });
+
+        conn.on('close', () => {
+            // Remove disconnected player
+            const index = multiplayerState.connections.indexOf(conn);
+            if (index > -1) {
+                multiplayerState.connections.splice(index, 1);
+                delete multiplayerState.playerNames[conn.peer];
+                updatePlayerList();
+            }
         });
     });
 
@@ -849,17 +926,28 @@ function hostMultiplayerGame() {
         // Re-enable button on error
         hostButton.disabled = false;
         hostButton.textContent = 'Create Room';
+        nameInput.disabled = false;
         multiplayerState.peer = null;
         multiplayerState.isHost = false;
     });
 }
 
 function joinMultiplayerGame() {
-    const roomCode = document.getElementById('joinCodeInput').value.toUpperCase().trim();
+    const roomCodeInput = document.getElementById('joinCodeInput');
+    const roomCode = roomCodeInput.value.toUpperCase().trim();
     const joinButton = document.getElementById('joinGame');
+    const nameInput = document.getElementById('guestNameInput');
+    const playerName = nameInput.value.trim();
+
+    if (!playerName) {
+        alert('Please enter your name');
+        nameInput.focus();
+        return;
+    }
 
     if (!roomCode || roomCode.length !== 6) {
         alert('Please enter a valid 6-character room code');
+        roomCodeInput.focus();
         return;
     }
 
@@ -869,10 +957,16 @@ function joinMultiplayerGame() {
         return;
     }
 
-    // Disable button during connection
+    // Disable inputs during connection
     joinButton.disabled = true;
     joinButton.textContent = 'Connecting...';
-    updateConnectionStatus('Connecting to room...');
+    nameInput.disabled = true;
+    roomCodeInput.disabled = true;
+
+    multiplayerState.playerName = playerName;
+
+    const joinStatus = document.getElementById('joinStatus');
+    joinStatus.innerHTML = '<p>🔄 Connecting to room...</p>';
 
     multiplayerState.peer = new Peer({
         config: {
@@ -890,7 +984,15 @@ function joinMultiplayerGame() {
         conn.on('open', () => {
             multiplayerState.conn = conn;
             multiplayerState.connected = true;
-            updateConnectionStatus('Connected to game!');
+
+            joinStatus.innerHTML = '<p>✅ Connected to game!</p>';
+            joinStatus.classList.add('connected');
+
+            // Send player name to host
+            conn.send({
+                type: 'playerName',
+                name: playerName
+            });
 
             // Show game setup for guest
             showGameSetup();
@@ -903,22 +1005,26 @@ function joinMultiplayerGame() {
         conn.on('error', (err) => {
             console.error('Connection error:', err);
             alert('Failed to connect. Make sure the room code is correct.');
-            // Re-enable button on error
+            // Re-enable inputs on error
             joinButton.disabled = false;
             joinButton.textContent = 'Join Room';
+            nameInput.disabled = false;
+            roomCodeInput.disabled = false;
             multiplayerState.peer = null;
-            updateConnectionStatus('Not connected');
+            joinStatus.innerHTML = '<p>❌ Connection failed</p>';
         });
     });
 
     multiplayerState.peer.on('error', (err) => {
         console.error('Peer error:', err);
         alert('Connection error: ' + err.message);
-        // Re-enable button on error
+        // Re-enable inputs on error
         joinButton.disabled = false;
         joinButton.textContent = 'Join Room';
+        nameInput.disabled = false;
+        roomCodeInput.disabled = false;
         multiplayerState.peer = null;
-        updateConnectionStatus('Not connected');
+        joinStatus.innerHTML = '<p>❌ Connection failed</p>';
     });
 }
 
@@ -943,6 +1049,22 @@ function handleMultiplayerMessage(data, conn) {
         }
 
         renderGame();
+    } else if (data.type === 'playerName') {
+        // Store player name
+        multiplayerState.playerNames[conn.peer] = data.name;
+        updatePlayerList();
+
+        const hostStatus = document.getElementById('hostStatus');
+        const playerCount = multiplayerState.connections.length;
+        hostStatus.innerHTML = `<p>✅ ${playerCount} player(s) connected</p>`;
+    } else if (data.type === 'requestName') {
+        // Send our name to host
+        if (multiplayerState.conn) {
+            multiplayerState.conn.send({
+                type: 'playerName',
+                name: multiplayerState.playerName
+            });
+        }
     }
 }
 
@@ -953,16 +1075,6 @@ function broadcastGameState() {
                 conn.send({ type: 'gameState', data: gameState });
             }
         });
-    }
-}
-
-function updateConnectionStatus(message) {
-    const statusEl = document.getElementById('connectionStatus');
-    if (statusEl) {
-        statusEl.innerHTML = `<p>${message}</p>`;
-        if (message.includes('connected') || message.includes('Connected')) {
-            statusEl.classList.add('connected');
-        }
     }
 }
 
@@ -978,34 +1090,46 @@ function updatePlayerList() {
     // Add host
     const hostDiv = document.createElement('div');
     hostDiv.className = 'connected-player host';
-    hostDiv.innerHTML = `<span>You (Host)</span><span class="player-role">HOST</span>`;
+    const hostName = multiplayerState.playerName || 'Host';
+    hostDiv.innerHTML = `<span>${hostName} (You)</span><span class="player-role">HOST</span>`;
     listEl.appendChild(hostDiv);
 
     // Add other players
-    multiplayerState.connections.forEach((conn, index) => {
+    multiplayerState.connections.forEach((conn) => {
         const playerDiv = document.createElement('div');
         playerDiv.className = 'connected-player';
-        playerDiv.innerHTML = `<span>Player ${index + 2}</span><span class="player-role">GUEST</span>`;
+        const playerName = multiplayerState.playerNames[conn.peer] || 'Guest';
+        playerDiv.innerHTML = `<span>${playerName}</span><span class="player-role">GUEST</span>`;
         listEl.appendChild(playerDiv);
     });
 }
 
 function showGameSetup() {
-    // Hide connection setup, show game setup
-    const connectionSetup = document.getElementById('connectionSetup');
+    // Hide all connection screens
+    document.getElementById('initialChoice').style.display = 'none';
+    document.getElementById('hostScreen').style.display = 'none';
+    document.getElementById('joinScreen').style.display = 'none';
+
+    // Show game setup
     const gameSetup = document.getElementById('gameSetup');
 
-    if (connectionSetup) connectionSetup.style.display = 'none';
     if (gameSetup && multiplayerState.isHost) {
         gameSetup.style.display = 'block';
     } else if (gameSetup) {
         // For guests, show a waiting message instead
         gameSetup.style.display = 'block';
         const newGameBtn = document.getElementById('newGame');
+        const modeButtons = document.querySelectorAll('.mode-btn');
+        const startingPoints = document.getElementById('startingPoints');
+
         if (newGameBtn) {
             newGameBtn.disabled = true;
             newGameBtn.textContent = 'Waiting for host to start game...';
         }
+
+        // Disable controls for guests
+        modeButtons.forEach(btn => btn.disabled = true);
+        if (startingPoints) startingPoints.disabled = true;
     }
 }
 

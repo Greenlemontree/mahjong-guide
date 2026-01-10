@@ -1124,3 +1124,191 @@ header h1 {
     margin-bottom: 8px;
     line-height: 1.5;
 }
+
+/* Connection Choice Screens */
+.connection-choice {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.choice-card {
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border: 2px solid #cbd5e0;
+    border-radius: 12px;
+    padding: 32px 24px;
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.choice-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    border-color: #2c5282;
+}
+
+.choice-card h3 {
+    color: #2c5282;
+    margin-bottom: 12px;
+    font-size: 1.4em;
+}
+
+.choice-card p {
+    color: #4a5568;
+    margin-bottom: 24px;
+}
+
+.btn-large {
+    padding: 16px 32px !important;
+    font-size: 1.1em !important;
+}
+
+.btn-back {
+    background: #e2e8f0;
+    color: #2d3748;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95em;
+    margin-bottom: 16px;
+    transition: all 0.3s;
+}
+
+.btn-back:hover {
+    background: #cbd5e0;
+}
+
+.name-input-section,
+.join-input-section {
+    margin-bottom: 20px;
+}
+
+.name-input-section label,
+.join-input-section label {
+    display: block;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 8px;
+}
+
+.name-input-section input,
+.join-input-section input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #cbd5e0;
+    border-radius: 6px;
+    font-size: 1em;
+}
+
+.name-input-section input:focus,
+.join-input-section input:focus {
+    outline: none;
+    border-color: #2c5282;
+}
+
+/* Game Setup */
+.setup-options {
+    background: #f7fafc;
+    padding: 24px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+.setup-row {
+    margin-bottom: 20px;
+}
+
+.setup-row:last-child {
+    margin-bottom: 0;
+}
+
+.setup-row label {
+    display: block;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 12px;
+}
+
+.setup-row select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #cbd5e0;
+    border-radius: 6px;
+    font-size: 1em;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        border-radius: 8px;
+    }
+
+    header h1 {
+        font-size: 1.5em;
+    }
+
+    .tab-btn {
+        padding: 12px 8px;
+        font-size: 0.9em;
+    }
+
+    .tab-content {
+        padding: 16px;
+    }
+
+    .connection-choice {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .choice-card {
+        padding: 24px 16px;
+    }
+
+    .multiplayer-options {
+        grid-template-columns: 1fr;
+    }
+
+    .tile-picker {
+        grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+    }
+
+    .pickable-tile {
+        font-size: 1.5em;
+        padding: 8px;
+    }
+
+    .selected-tile {
+        font-size: 1.5em;
+    }
+
+    .code-display {
+        font-size: 1.8em;
+        letter-spacing: 4px;
+        padding: 15px;
+    }
+
+    .hand-settings {
+        grid-template-columns: 1fr;
+    }
+
+    .player-card {
+        min-width: auto;
+    }
+
+    .result-type {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .btn-large {
+        padding: 14px 24px !important;
+        font-size: 1em !important;
+    }
+}

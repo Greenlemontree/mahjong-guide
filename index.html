@@ -18,10 +18,6 @@
     <div class="container">
         <header>
             <h1>🀄 Riichi Mahjong Helper</h1>
-            <div class="mode-selector">
-                <button id="mode3p" class="mode-btn">3 Players (Sanma)</button>
-                <button id="mode4p" class="mode-btn active">4 Players</button>
-            </div>
         </header>
 
         <nav class="tab-nav">
@@ -35,61 +31,96 @@
         <div id="game-tab" class="tab-content active">
             <h2>Multiplayer Game Room</h2>
 
-            <!-- Connection Setup Phase -->
-            <div id="connectionSetup" class="multiplayer-section">
-                <div class="connection-status" id="connectionStatus">
-                    <p>Not connected</p>
+            <!-- Initial Choice: Host or Join -->
+            <div id="initialChoice" class="multiplayer-section">
+                <div class="connection-choice">
+                    <div class="choice-card">
+                        <h3>🎮 Host a Game</h3>
+                        <p>Create a new room and invite others</p>
+                        <button id="chooseHost" class="btn-primary btn-large">Host New Game</button>
+                    </div>
+                    <div class="choice-card">
+                        <h3>🔗 Join a Game</h3>
+                        <p>Enter a room code to join</p>
+                        <button id="chooseJoin" class="btn-primary btn-large">Join Existing Game</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Host Screen -->
+            <div id="hostScreen" class="multiplayer-section" style="display: none;">
+                <button id="backFromHost" class="btn-back">← Back</button>
+                <h3>Host a Game</h3>
+
+                <div class="name-input-section">
+                    <label>Your Name:</label>
+                    <input type="text" id="hostNameInput" placeholder="Enter your name" maxlength="20">
                 </div>
 
-                <div class="multiplayer-options">
-                    <div class="option-card">
-                        <h3>Host a Game</h3>
-                        <p>Create a room and share the code with other players</p>
-                        <button id="hostGame" class="btn-primary">Create Room</button>
-                        <div id="roomCode" style="display: none;">
-                            <h4>Room Code:</h4>
-                            <div class="code-display"></div>
-                            <p class="code-instruction">Share this code with other players</p>
-                        </div>
-                    </div>
+                <button id="hostGame" class="btn-primary">Create Room</button>
 
-                    <div class="option-card">
-                        <h3>Join a Game</h3>
-                        <p>Enter the room code from the host</p>
-                        <input type="text" id="joinCodeInput" placeholder="Enter room code" maxlength="6">
-                        <button id="joinGame" class="btn-primary">Join Room</button>
-                    </div>
+                <div id="roomCode" style="display: none;">
+                    <h4>Room Code:</h4>
+                    <div class="code-display"></div>
+                    <p class="code-instruction">Share this code with other players</p>
+                </div>
+
+                <div class="connection-status" id="hostStatus">
+                    <p>Click "Create Room" to start</p>
                 </div>
 
                 <div id="connectedPlayers" style="display: none;">
                     <h3>Connected Players</h3>
                     <div id="playerList"></div>
                 </div>
+            </div>
 
-                <div class="multiplayer-info">
-                    <h3>How It Works</h3>
-                    <ul>
-                        <li>One person hosts and gets a 6-digit room code</li>
-                        <li>Other players join using that code</li>
-                        <li>Once connected, start the game to see scores in real-time</li>
-                        <li>Only the host can set up and record hands (others view only)</li>
-                        <li>Works on same WiFi or internet connection</li>
-                    </ul>
+            <!-- Join Screen -->
+            <div id="joinScreen" class="multiplayer-section" style="display: none;">
+                <button id="backFromJoin" class="btn-back">← Back</button>
+                <h3>Join a Game</h3>
+
+                <div class="name-input-section">
+                    <label>Your Name:</label>
+                    <input type="text" id="guestNameInput" placeholder="Enter your name" maxlength="20">
+                </div>
+
+                <div class="join-input-section">
+                    <label>Room Code:</label>
+                    <input type="text" id="joinCodeInput" placeholder="Enter 6-digit code" maxlength="6">
+                </div>
+
+                <button id="joinGame" class="btn-primary">Join Room</button>
+
+                <div class="connection-status" id="joinStatus">
+                    <p>Enter the room code from the host</p>
                 </div>
             </div>
 
             <!-- Game Setup Phase (shown after connection) -->
             <div id="gameSetup" class="game-setup" style="display: none;">
                 <h2>Game Setup</h2>
-                <div class="starting-points">
-                    <label>Starting Points:</label>
-                    <select id="startingPoints">
-                        <option value="25000">25,000 (Standard)</option>
-                        <option value="30000">30,000</option>
-                        <option value="35000">35,000</option>
-                    </select>
+
+                <div class="setup-options">
+                    <div class="setup-row">
+                        <label>Number of Players:</label>
+                        <div class="mode-selector">
+                            <button id="mode3p" class="mode-btn">3 Players (Sanma)</button>
+                            <button id="mode4p" class="mode-btn active">4 Players</button>
+                        </div>
+                    </div>
+
+                    <div class="setup-row">
+                        <label>Starting Points:</label>
+                        <select id="startingPoints">
+                            <option value="25000">25,000 (Standard)</option>
+                            <option value="30000">30,000</option>
+                            <option value="35000">35,000</option>
+                        </select>
+                    </div>
                 </div>
-                <button id="newGame" class="btn-primary">Start Game</button>
+
+                <button id="newGame" class="btn-primary btn-large">Start Game</button>
             </div>
 
             <!-- Active Game Phase -->
