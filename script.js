@@ -120,15 +120,16 @@ function showInitialChoice() {
     document.getElementById('joinScreen').style.display = 'none';
 
     // Reset state
-    if (multiplayerState.client) {
-        multiplayerState.client.leave();
+    if (multiplayerState.peer) {
+        multiplayerState.peer.destroy();
     }
     multiplayerState = {
-        client: null,
+        peer: null,
+        conn: null,
         isHost: false,
         roomCode: null,
         connected: false,
-        peerIds: [],
+        connections: [],
         playerName: '',
         playerNames: {}
     };
@@ -1121,8 +1122,12 @@ function handleMultiplayerMessage(data, fromPeerId) {
 }
 
 function broadcastGameState() {
-    if (multiplayerState.isHost && multiplayerState.client) {
-        multiplayerState.client.broadcast({ type: 'gameState', data: gameState });
+    if (multiplayerState.isHost && multiplayerState.connections) {
+        multiplayerState.connections.forEach(conn => {
+            if (conn.open) {
+                conn.send({ type: 'gameState', data: gameState });
+            }
+        });
     }
 }
 
@@ -1143,13 +1148,15 @@ function updatePlayerList() {
     listEl.appendChild(hostDiv);
 
     // Add other players
-    multiplayerState.peerIds.forEach((peerId) => {
-        const playerDiv = document.createElement('div');
-        playerDiv.className = 'connected-player';
-        const playerName = multiplayerState.playerNames[peerId] || 'Guest';
-        playerDiv.innerHTML = `<span>${playerName}</span><span class="player-role">GUEST</span>`;
-        listEl.appendChild(playerDiv);
-    });
+    if (multiplayerState.connections) {
+        multiplayerState.connections.forEach((conn) => {
+            const playerDiv = document.createElement('div');
+            playerDiv.className = 'connected-player';
+            const playerName = multiplayerState.playerNames[conn.peer] || 'Guest';
+            playerDiv.innerHTML = `<span>${playerName}</span><span class="player-role">GUEST</span>`;
+            listEl.appendChild(playerDiv);
+        });
+    }
 }
 
 function showGameSetup() {
@@ -1240,17 +1247,19 @@ function startGameFromHostRoom() {
     });
 
     // Add connected players
-    multiplayerState.peerIds.forEach((peerId, index) => {
-        const playerName = multiplayerState.playerNames[peerId] || `Player ${index + 2}`;
-        if (index < gameState.mode - 1) {
-            gameState.players.push({
-                name: playerName,
-                wind: winds[index + 1],
-                points: startingPoints,
-                riichi: false
-            });
-        }
-    });
+    if (multiplayerState.connections) {
+        multiplayerState.connections.forEach((conn, index) => {
+            const playerName = multiplayerState.playerNames[conn.peer] || `Player ${index + 2}`;
+            if (index < gameState.mode - 1) {
+                gameState.players.push({
+                    name: playerName,
+                    wind: winds[index + 1],
+                    points: startingPoints,
+                    riichi: false
+                });
+            }
+        });
+    }
 
     renderGame();
 
@@ -1271,7 +1280,10 @@ function renderGame() {
     const resultForm = document.getElementById('resultForm');
 
     if (scoreActions) {
-        if (multiplayerState.connected && !multiplayerState.isHost) {
+        // Check if user is a guest (connected but not host)
+        const isGuest = (multiplayerState.connected || multiplayerState.conn) && !multiplayerState.isHost;
+
+        if (isGuest) {
             scoreActions.style.display = 'none';
 
             // Add read-only notice for guests
