@@ -73,24 +73,12 @@ function hostMultiplayerGameSimple() {
             const playerName = multiplayerState.playerNames[conn.peer] || 'Guest';
             const hostStatus = document.getElementById('hostStatus');
             if (hostStatus) {
-                hostStatus.innerHTML = `<p>⚠️ ${playerName} disconnected</p>`;
+                hostStatus.innerHTML = `<p>⚠️ ${playerName} disconnected (waiting for reconnection...)</p>`;
             }
 
-            // Don't immediately remove - wait for potential reconnection
-            setTimeout(() => {
-                // Check if still disconnected after 10 seconds
-                if (!conn.open) {
-                    const index = multiplayerState.connections.indexOf(conn);
-                    if (index > -1) {
-                        multiplayerState.connections.splice(index, 1);
-                        delete multiplayerState.playerNames[conn.peer];
-                        updatePlayerList();
-                        if (hostStatus) {
-                            hostStatus.innerHTML = `<p>❌ ${playerName} left the game</p>`;
-                        }
-                    }
-                }
-            }, 10000);
+            // Mark connection as disconnected but NEVER remove it
+            // Player can reconnect at any time
+            updatePlayerList();
         });
     });
 
@@ -363,7 +351,21 @@ function updatePlayerListSimple() {
         const playerDiv = document.createElement('div');
         playerDiv.className = 'connected-player';
         const playerName = multiplayerState.playerNames[conn.peer] || 'Guest';
-        playerDiv.innerHTML = `<span>${playerName}</span><span class="player-role">GUEST</span>`;
+
+        // Check if connection is active
+        const isConnected = conn.open;
+        const statusBadge = isConnected ?
+            '<span class="player-role">GUEST</span>' :
+            '<span class="player-role" style="background: #f59e0b; color: white;">DISCONNECTED</span>';
+
+        playerDiv.innerHTML = `<span>${playerName}</span>${statusBadge}`;
+
+        // Add visual styling for disconnected players
+        if (!isConnected) {
+            playerDiv.style.opacity = '0.6';
+            playerDiv.style.border = '2px dashed #f59e0b';
+        }
+
         listEl.appendChild(playerDiv);
     });
 }
