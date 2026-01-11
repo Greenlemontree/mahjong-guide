@@ -806,6 +806,11 @@ function displayHandResult(result, position, winType, playerCount = 4) {
 
     const limitName = getLimitHandName(result.han);
 
+    // Check if a game is active
+    const gameActive = gameState.gameStarted;
+    const reportButton = gameActive && multiplayerState.isHost ?
+        `<button id="reportToGame" class="btn-primary btn-large" style="margin-top: 16px; width: 100%;">📊 Report to Game</button>` : '';
+
     container.innerHTML = `
         <h3>✅ Hand Analysis</h3>
         <div class="yaku-detected">
@@ -819,9 +824,18 @@ function displayHandResult(result, position, winType, playerCount = 4) {
             <p style="font-size: 2em; font-weight: 700; margin: 12px 0;">${formatScore(points, isDealer, winType)}</p>
             ${getPaymentDetails(points, isDealer, winType, playerCount)}
         </div>
+        ${reportButton}
     `;
 
     container.style.display = 'block';
+
+    // Add event listener for report button if game is active
+    if (gameActive && multiplayerState.isHost) {
+        const btn = document.getElementById('reportToGame');
+        if (btn) {
+            btn.addEventListener('click', () => reportScoreToGame(result, position, winType, points));
+        }
+    }
 }
 
 function calculateScoreFromHanFu(han, fu, isDealer, winType) {
@@ -1251,6 +1265,34 @@ function startGameFromHostRoom() {
 function renderGame() {
     updateRoundDisplay();
     renderPlayerScores();
+
+    // Hide score actions for guests (only host can record scores)
+    const scoreActions = document.getElementById('scoreActions');
+    const resultForm = document.getElementById('resultForm');
+
+    if (scoreActions) {
+        if (multiplayerState.connected && !multiplayerState.isHost) {
+            scoreActions.style.display = 'none';
+
+            // Add read-only notice for guests
+            if (resultForm && !document.getElementById('guestNotice')) {
+                resultForm.innerHTML = `
+                    <div id="guestNotice" style="background: linear-gradient(135deg, #718096 0%, #4a5568 100%); padding: 16px; border-radius: 8px; margin-top: 16px; text-align: center;">
+                        <p style="margin: 0; color: white;">👁️ <strong>Spectator Mode</strong></p>
+                        <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.8); font-size: 0.9em;">The host is managing the game scores</p>
+                    </div>
+                `;
+                resultForm.style.display = 'block';
+            }
+        } else {
+            scoreActions.style.display = 'block';
+            // Clear guest notice if exists
+            const guestNotice = document.getElementById('guestNotice');
+            if (guestNotice) {
+                guestNotice.remove();
+            }
+        }
+    }
 }
 
 function updateRoundDisplay() {
@@ -1293,6 +1335,149 @@ function handleResultType(resultType) {
     // Score recording feature placeholder - removed alert to avoid interrupting game flow
     // Future: Implement score recording functionality here
     console.log('Score recording not yet implemented for result type:', resultType);
+}
+
+// ===== SCORE REPORTING FUNCTIONS =====
+function reportScoreToGame(result, position, winType, points) {
+    // Show a form to select winner and loser
+    switchTab('game');
+
+    // Create score reporting UI
+    const resultForm = document.getElementById('resultForm');
+    if (!resultForm) return;
+
+    const isDealer = position === 'dealer';
+    const totalPoints = typeof points === 'number' ? points :
+        (winType === 'tsumo' ?
+            (isDealer ? points.all * (gameState.mode - 1) :
+                points.dealer + points.nondealer * (gameState.mode - 2)) :
+            points);
+
+    resultForm.innerHTML = `
+        <div style="background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); padding: 20px; border-radius: 8px; margin-top: 16px;">
+            <h3 style="margin-top: 0; color: white;">📊 Record Score</h3>
+
+            <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+                <p style="margin: 0; color: white;"><strong>${result.han} han, ${result.fu} fu</strong></p>
+                <p style="margin: 4px 0 0 0; color: rgba(255,255,255,0.9);">${winType === 'tsumo' ? 'Tsumo (Self-draw)' : 'Ron (Discard)'}</p>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; color: white; font-weight: bold;">Winner:</label>
+                <select id="winnerSelect" style="width: 100%; padding: 10px; border-radius: 4px; border: none; font-size: 1em;">
+                    ${gameState.players.map((p, i) => `<option value="${i}">${p.name} (${p.wind})</option>`).join('')}
+                </select>
+            </div>
+
+            ${winType === 'ron' ? `
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; color: white; font-weight: bold;">Who discarded (loser):</label>
+                <select id="loserSelect" style="width: 100%; padding: 10px; border-radius: 4px; border: none; font-size: 1em;">
+                    ${gameState.players.map((p, i) => `<option value="${i}">${p.name} (${p.wind})</option>`).join('')}
+                </select>
+            </div>
+            ` : ''}
+
+            <div style="display: flex; gap: 12px;">
+                <button id="confirmScore" class="btn-primary" style="flex: 1;">Confirm & Apply</button>
+                <button id="cancelScore" class="btn-back" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    `;
+
+    resultForm.style.display = 'block';
+
+    // Add event listeners
+    document.getElementById('confirmScore').addEventListener('click', () => {
+        const winnerIdx = parseInt(document.getElementById('winnerSelect').value);
+        const loserIdx = winType === 'ron' ? parseInt(document.getElementById('loserSelect').value) : null;
+
+        if (winType === 'ron' && winnerIdx === loserIdx) {
+            alert('Winner and loser cannot be the same person!');
+            return;
+        }
+
+        applyScore(winnerIdx, loserIdx, winType, points, isDealer);
+        resultForm.style.display = 'none';
+        resultForm.innerHTML = '';
+    });
+
+    document.getElementById('cancelScore').addEventListener('click', () => {
+        resultForm.style.display = 'none';
+        resultForm.innerHTML = '';
+    });
+}
+
+function applyScore(winnerIdx, loserIdx, winType, points, isDealer) {
+    if (winType === 'ron') {
+        // Ron: loser pays winner
+        const payment = typeof points === 'number' ? points : points;
+        gameState.players[winnerIdx].points += payment;
+        gameState.players[loserIdx].points -= payment;
+    } else {
+        // Tsumo: everyone pays winner
+        if (typeof points === 'object') {
+            // Complex tsumo payment
+            gameState.players.forEach((player, idx) => {
+                if (idx === winnerIdx) {
+                    // Winner receives
+                    const received = isDealer ?
+                        points.all * (gameState.mode - 1) :
+                        points.dealer + points.nondealer * (gameState.mode - 2);
+                    player.points += received;
+                } else {
+                    // Others pay
+                    const payment = (idx === gameState.dealer && !isDealer) ?
+                        points.dealer : points.nondealer || points.all;
+                    player.points -= payment;
+                }
+            });
+        }
+    }
+
+    // Check if winner was in riichi (collect riichi sticks)
+    if (gameState.players[winnerIdx].riichi) {
+        gameState.players[winnerIdx].points += gameState.riichiSticks * 1000;
+        gameState.riichiSticks = 0;
+        gameState.players[winnerIdx].riichi = false;
+    }
+
+    // Advance round
+    advanceRound(winnerIdx);
+
+    // Update display
+    renderGame();
+
+    // Broadcast to other players
+    broadcastGameState();
+
+    alert(`Score recorded! ${gameState.players[winnerIdx].name} wins!`);
+}
+
+function advanceRound(winnerIdx) {
+    // If dealer wins, increment honba
+    if (winnerIdx === gameState.dealer) {
+        gameState.honba++;
+    } else {
+        // Non-dealer wins: advance dealer, reset honba
+        gameState.dealer = (gameState.dealer + 1) % gameState.mode;
+        gameState.honba = 0;
+
+        // Check if we need to advance wind
+        if (gameState.dealer === 0) {
+            const winds = ['東', '南', '西', '北'];
+            const currentWindIdx = winds.indexOf(gameState.currentWind);
+            if (currentWindIdx < winds.length - 1) {
+                gameState.currentWind = winds[currentWindIdx + 1];
+                gameState.currentRound = 1;
+            } else {
+                // Game end
+                alert('Game finished!');
+            }
+        } else {
+            gameState.currentRound++;
+        }
+    }
 }
 
 // Bridge functions to simple multiplayer (defined in multiplayer-simple.js)
