@@ -1160,9 +1160,137 @@ function renderPlayerScores() {
 }
 
 function handleResultType(resultType) {
-    // Score recording feature placeholder - removed alert to avoid interrupting game flow
-    // Future: Implement score recording functionality here
-    console.log('Score recording not yet implemented for result type:', resultType);
+    const resultForm = document.getElementById('resultForm');
+    if (!resultForm) return;
+
+    if (resultType === 'draw') {
+        // Handle draw - no score change, advance dealer with honba
+        if (confirm('Confirm draw? This will advance to the next hand with +1 honba.')) {
+            gameState.honba++;
+            renderGame();
+            broadcastGameState();
+        }
+        return;
+    }
+
+    if (resultType === 'chombo') {
+        // Handle chombo (penalty)
+        resultForm.innerHTML = `
+            <div style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); padding: 20px; border-radius: 8px; margin-top: 16px;">
+                <h3 style="margin-top: 0; color: white;">⚠️ Chombo (Dead Hand Penalty)</h3>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; color: white; font-weight: bold;">Who committed chombo?</label>
+                    <select id="chomboSelect" style="width: 100%; padding: 10px; border-radius: 4px; border: none; font-size: 1em;">
+                        ${gameState.players.map((p, i) => `<option value="${i}">${p.name} (${p.wind})</option>`).join('')}
+                    </select>
+                </div>
+
+                <p style="color: rgba(255,255,255,0.9); font-size: 0.9em; margin-bottom: 16px;">
+                    Penalty: Player loses points (usually equivalent to mangan payment)
+                </p>
+
+                <div style="display: flex; gap: 12px;">
+                    <button id="confirmChombo" class="btn-primary" style="flex: 1;">Confirm Penalty</button>
+                    <button id="cancelChombo" class="btn-back" style="flex: 1;">Cancel</button>
+                </div>
+            </div>
+        `;
+
+        resultForm.style.display = 'block';
+
+        document.getElementById('confirmChombo').addEventListener('click', () => {
+            const playerIdx = parseInt(document.getElementById('chomboSelect').value);
+            // Standard chombo penalty (varies by rules, using 8000 as common value)
+            const penaltyAmount = 8000;
+
+            if (gameState.players[playerIdx].points >= penaltyAmount) {
+                gameState.players[playerIdx].points -= penaltyAmount;
+            } else {
+                gameState.players[playerIdx].points = 0;
+            }
+
+            renderGame();
+            broadcastGameState();
+            resultForm.style.display = 'none';
+            resultForm.innerHTML = '';
+            alert(`Chombo penalty applied to ${gameState.players[playerIdx].name}`);
+        });
+
+        document.getElementById('cancelChombo').addEventListener('click', () => {
+            resultForm.style.display = 'none';
+            resultForm.innerHTML = '';
+        });
+        return;
+    }
+
+    // Handle Ron or Tsumo - manual score entry
+    const winType = resultType; // 'ron' or 'tsumo'
+
+    resultForm.innerHTML = `
+        <div style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); padding: 20px; border-radius: 8px; margin-top: 16px;">
+            <h3 style="margin-top: 0; color: white;">🎯 ${winType === 'ron' ? 'Ron (Discard Win)' : 'Tsumo (Self-Draw)'}</h3>
+
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; color: white; font-weight: bold;">Winner:</label>
+                <select id="winnerSelect" style="width: 100%; padding: 10px; border-radius: 4px; border: none; font-size: 1em;">
+                    ${gameState.players.map((p, i) => `<option value="${i}">${p.name} (${p.wind})</option>`).join('')}
+                </select>
+            </div>
+
+            ${winType === 'ron' ? `
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; color: white; font-weight: bold;">Who discarded (loser):</label>
+                <select id="loserSelect" style="width: 100%; padding: 10px; border-radius: 4px; border: none; font-size: 1em;">
+                    ${gameState.players.map((p, i) => `<option value="${i}">${p.name} (${p.wind})</option>`).join('')}
+                </select>
+            </div>
+            ` : ''}
+
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; color: white; font-weight: bold;">Score (points):</label>
+                <input type="number" id="scoreInput" placeholder="Enter total points (e.g., 3900, 8000, 12000)"
+                    style="width: 100%; padding: 10px; border-radius: 4px; border: none; font-size: 1em;" step="100" min="0">
+            </div>
+
+            <p style="color: rgba(255,255,255,0.9); font-size: 0.85em; margin-bottom: 16px;">
+                💡 Tip: Use the Hand Calculator to calculate exact scores, or enter manually
+            </p>
+
+            <div style="display: flex; gap: 12px;">
+                <button id="confirmManualScore" class="btn-primary" style="flex: 1;">Confirm & Apply</button>
+                <button id="cancelManualScore" class="btn-back" style="flex: 1;">Cancel</button>
+            </div>
+        </div>
+    `;
+
+    resultForm.style.display = 'block';
+
+    document.getElementById('confirmManualScore').addEventListener('click', () => {
+        const winnerIdx = parseInt(document.getElementById('winnerSelect').value);
+        const loserIdx = winType === 'ron' ? parseInt(document.getElementById('loserSelect').value) : null;
+        const scoreValue = parseInt(document.getElementById('scoreInput').value);
+
+        if (!scoreValue || scoreValue <= 0) {
+            alert('Please enter a valid score value');
+            return;
+        }
+
+        if (winType === 'ron' && winnerIdx === loserIdx) {
+            alert('Winner and loser cannot be the same person!');
+            return;
+        }
+
+        const isDealer = winnerIdx === gameState.dealer;
+        applyScore(winnerIdx, loserIdx, winType, scoreValue, isDealer);
+        resultForm.style.display = 'none';
+        resultForm.innerHTML = '';
+    });
+
+    document.getElementById('cancelManualScore').addEventListener('click', () => {
+        resultForm.style.display = 'none';
+        resultForm.innerHTML = '';
+    });
 }
 
 // ===== SCORE REPORTING FUNCTIONS =====
@@ -1295,17 +1423,67 @@ function advanceRound(winnerIdx) {
         if (gameState.dealer === 0) {
             const winds = ['東', '南', '西', '北'];
             const currentWindIdx = winds.indexOf(gameState.currentWind);
-            if (currentWindIdx < winds.length - 1) {
+
+            // Standard game: East + South rounds (Hanchan)
+            // For a full game, uncomment the line below to play all four winds
+            const maxWindIdx = 1; // 0 = East only (Tonpuu), 1 = East+South (Hanchan), 3 = All four winds
+
+            if (currentWindIdx < maxWindIdx) {
                 gameState.currentWind = winds[currentWindIdx + 1];
                 gameState.currentRound = 1;
             } else {
-                // Game end
-                alert('Game finished!');
+                // Game finished - show final scores
+                showGameEnd();
+                return;
             }
         } else {
             gameState.currentRound++;
         }
     }
+}
+
+function showGameEnd() {
+    // Sort players by points
+    const sortedPlayers = [...gameState.players].sort((a, b) => b.points - a.points);
+
+    const resultHTML = `
+        <div style="background: linear-gradient(135deg, #805ad5 0%, #6b46c1 100%); padding: 24px; border-radius: 12px; margin: 20px 0; text-align: center;">
+            <h2 style="color: white; margin-top: 0;">🎊 Game Finished!</h2>
+
+            <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 8px; margin-top: 20px;">
+                <h3 style="color: white; margin-top: 0;">Final Standings</h3>
+                ${sortedPlayers.map((p, i) => `
+                    <div style="background: rgba(255,255,255,${i === 0 ? '0.3' : '0.1'}); padding: 12px; margin: 8px 0; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: white; font-weight: bold;">${i + 1}. ${p.name} (${p.wind})</span>
+                        <span style="color: ${i === 0 ? '#ffd700' : 'white'}; font-size: 1.2em; font-weight: bold;">${p.points.toLocaleString()}</span>
+                    </div>
+                `).join('')}
+            </div>
+
+            <button id="newGame" class="btn-primary" style="margin-top: 20px; width: 100%; padding: 12px; font-size: 1.1em;">Start New Game</button>
+        </div>
+    `;
+
+    const resultForm = document.getElementById('resultForm');
+    if (resultForm) {
+        resultForm.innerHTML = resultHTML;
+        resultForm.style.display = 'block';
+
+        document.getElementById('newGame').addEventListener('click', () => {
+            if (confirm('Start a new game? This will reset all scores.')) {
+                // Reset to initial choice screen
+                showInitialChoice();
+            }
+        });
+    }
+
+    // Hide score actions when game is over
+    const scoreActions = document.getElementById('scoreActions');
+    if (scoreActions) {
+        scoreActions.style.display = 'none';
+    }
+
+    alert(`Game Over! Winner: ${sortedPlayers[0].name} with ${sortedPlayers[0].points.toLocaleString()} points!`);
 }
 
 // Bridge functions to simple multiplayer (defined in multiplayer-simple.js)
