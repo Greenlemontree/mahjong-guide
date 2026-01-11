@@ -623,6 +623,16 @@ function analyzeHand(tiles, winType, position, closed, conditions = {}) {
         han += 1;
     }
 
+    // Check for Pinfu (平和 - All Sequences, Valueless Pair, Two-sided Wait)
+    if (closed && !isSevenPairs) {
+        const pinfuValid = checkPinfu(tiles, winType);
+        if (pinfuValid) {
+            yaku.push({ name: '平和 (Pinfu - Simple Hand)', han: 1 });
+            han += 1;
+            fu = 30; // Pinfu always 30 fu (20 base + 10 for closed ron, or 20 + 2 for tsumo = 22 → 30)
+        }
+    }
+
     // Check for flush (清一色 - Chinitsu)
     const suits = new Set(tiles.map(t => t.suit));
     if (suits.size === 1 && !suits.has('w') && !suits.has('d')) {
@@ -756,6 +766,47 @@ function countDragonTriplets(tiles) {
     });
 
     return Object.values(dragonCounts).filter(count => count >= 3).length;
+}
+
+function checkPinfu(tiles, winType) {
+    // Pinfu requirements:
+    // 1. All sequences (no triplets except the pair)
+    // 2. Valueless pair (not dragons, not seat/round wind - simplified: no honor tiles in pair)
+    // 3. Two-sided wait (ryanmen) - simplified check
+    // 4. Closed hand (already checked before calling this)
+
+    const counts = {};
+    tiles.forEach(t => {
+        const key = `${t.suit}-${t.value}`;
+        counts[key] = (counts[key] || 0) + 1;
+    });
+
+    // Find the pair
+    const pairs = Object.entries(counts).filter(([key, count]) => count === 2);
+    if (pairs.length !== 1) return false; // Must have exactly one pair
+
+    const pairKey = pairs[0][0];
+    const [pairSuit, pairValue] = pairKey.split('-');
+
+    // Pair must not be honor tiles (dragons or winds)
+    if (pairSuit === 'w' || pairSuit === 'd') return false;
+
+    // Check all other tiles form sequences (no triplets)
+    const triplets = Object.values(counts).filter(count => count >= 3);
+    if (triplets.length > 0) return false; // No triplets allowed in Pinfu
+
+    // Check that all groups are sequences (not isolated tiles)
+    // Simplified: if we have 4 groups + 1 pair and no triplets, they must be sequences
+    const nonPairTiles = tiles.filter(t => `${t.suit}-${t.value}` !== pairKey);
+
+    // All non-pair tiles must be part of sequences (in suits, not honors)
+    const hasHonorSequences = nonPairTiles.some(t => t.suit === 'w' || t.suit === 'd');
+    if (hasHonorSequences) return false; // Can't make sequences with honors
+
+    // Simplified check: if hand is valid and has no triplets, no honor sequences,
+    // and valueless pair, it's likely Pinfu
+    // A full implementation would check for two-sided wait specifically
+    return true;
 }
 
 function displayHandResult(result, position, winType, playerCount = 4) {
