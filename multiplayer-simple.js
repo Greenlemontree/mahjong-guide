@@ -328,6 +328,29 @@ function updatePlayerListSimple() {
     containerEl.style.display = 'block';
     listEl.innerHTML = '';
 
+    // Calculate player status
+    const requiredPlayers = gameState.mode; // 3 or 4
+    const connectedPlayers = multiplayerState.connections.length + 1; // +1 for host
+    const playersNeeded = requiredPlayers - connectedPlayers;
+
+    // Add status message
+    if (playersNeeded > 0) {
+        const statusDiv = document.createElement('div');
+        statusDiv.style.cssText = 'background: #fef3c7; color: #92400e; padding: 12px; border-radius: 6px; margin-bottom: 12px; text-align: center; font-weight: bold;';
+        statusDiv.innerHTML = `⏳ Waiting for ${playersNeeded} more player(s) to join (${connectedPlayers}/${requiredPlayers})`;
+        listEl.appendChild(statusDiv);
+    } else if (playersNeeded === 0) {
+        const statusDiv = document.createElement('div');
+        statusDiv.style.cssText = 'background: #d1fae5; color: #065f46; padding: 12px; border-radius: 6px; margin-bottom: 12px; text-align: center; font-weight: bold;';
+        statusDiv.innerHTML = `✅ Ready to start! (${connectedPlayers}/${requiredPlayers} players)`;
+        listEl.appendChild(statusDiv);
+    } else {
+        const statusDiv = document.createElement('div');
+        statusDiv.style.cssText = 'background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 6px; margin-bottom: 12px; text-align: center; font-weight: bold;';
+        statusDiv.innerHTML = `⚠️ Too many players! (${connectedPlayers}/${requiredPlayers}) - Change mode or remove players`;
+        listEl.appendChild(statusDiv);
+    }
+
     // Add host
     const hostDiv = document.createElement('div');
     hostDiv.className = 'connected-player host';
@@ -347,6 +370,21 @@ function updatePlayerListSimple() {
 
 function startGameFromHostRoomSimple() {
     const startingPoints = parseInt(document.getElementById('hostStartingPoints').value);
+
+    // Validate correct number of players
+    const requiredPlayers = gameState.mode; // 3 or 4 players
+    const connectedPlayers = multiplayerState.connections.length + 1; // +1 for host
+
+    if (connectedPlayers < requiredPlayers) {
+        const playersNeeded = requiredPlayers - connectedPlayers;
+        alert(`❌ Not enough players!\n\nYou selected ${requiredPlayers}-player mode but only ${connectedPlayers} player(s) are connected.\n\nPlease wait for ${playersNeeded} more player(s) to join before starting the game.`);
+        return;
+    }
+
+    if (connectedPlayers > requiredPlayers) {
+        alert(`❌ Too many players!\n\nYou selected ${requiredPlayers}-player mode but ${connectedPlayers} players are connected.\n\nPlease change to ${connectedPlayers}-player mode or remove extra players.`);
+        return;
+    }
 
     gameState.startingPoints = startingPoints;
     gameState.currentRound = 1;
