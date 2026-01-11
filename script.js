@@ -624,12 +624,14 @@ function analyzeHand(tiles, winType, position, closed, conditions = {}) {
     }
 
     // Check for Pinfu (平和 - All Sequences, Valueless Pair, Two-sided Wait)
+    let hasPinfu = false;
     if (closed && !isSevenPairs) {
         const pinfuValid = checkPinfu(tiles, winType);
         if (pinfuValid) {
             yaku.push({ name: '平和 (Pinfu - Simple Hand)', han: 1 });
             han += 1;
             fu = 30; // Pinfu always 30 fu (20 base + 10 for closed ron, or 20 + 2 for tsumo = 22 → 30)
+            hasPinfu = true;
         }
     }
 
@@ -672,8 +674,9 @@ function analyzeHand(tiles, winType, position, closed, conditions = {}) {
         }
     }
 
-    // If tsumo and closed
-    if (winType === 'tsumo' && closed) {
+    // Menzen Tsumo (門前清自摸和) - closed hand self-draw
+    // NOT awarded with Pinfu or Chiitoitsu (they already account for the closed hand)
+    if (winType === 'tsumo' && closed && !hasPinfu && !isSevenPairs) {
         yaku.push({ name: '門前清自摸和 (Menzen Tsumo)', han: 1 });
         han += 1;
     }
