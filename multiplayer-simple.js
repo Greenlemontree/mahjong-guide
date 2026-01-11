@@ -69,12 +69,28 @@ function hostMultiplayerGameSimple() {
         });
 
         conn.on('close', () => {
-            const index = multiplayerState.connections.indexOf(conn);
-            if (index > -1) {
-                multiplayerState.connections.splice(index, 1);
-                delete multiplayerState.playerNames[conn.peer];
-                updatePlayerList();
+            console.log('Player disconnected:', conn.peer);
+            const playerName = multiplayerState.playerNames[conn.peer] || 'Guest';
+            const hostStatus = document.getElementById('hostStatus');
+            if (hostStatus) {
+                hostStatus.innerHTML = `<p>⚠️ ${playerName} disconnected</p>`;
             }
+
+            // Don't immediately remove - wait for potential reconnection
+            setTimeout(() => {
+                // Check if still disconnected after 10 seconds
+                if (!conn.open) {
+                    const index = multiplayerState.connections.indexOf(conn);
+                    if (index > -1) {
+                        multiplayerState.connections.splice(index, 1);
+                        delete multiplayerState.playerNames[conn.peer];
+                        updatePlayerList();
+                        if (hostStatus) {
+                            hostStatus.innerHTML = `<p>❌ ${playerName} left the game</p>`;
+                        }
+                    }
+                }
+            }, 10000);
         });
     });
 
@@ -95,6 +111,32 @@ function hostMultiplayerGameSimple() {
         nameInput.disabled = false;
         multiplayerState.peer = null;
         multiplayerState.isHost = false;
+    });
+
+    // Handle WiFi disconnection and reconnection
+    multiplayerState.peer.on('disconnected', () => {
+        console.log('Host disconnected from PeerJS server, attempting reconnect...');
+        const hostStatus = document.getElementById('hostStatus');
+        if (hostStatus) {
+            hostStatus.innerHTML = '<p>🔄 Connection lost, reconnecting...</p>';
+            hostStatus.classList.remove('connected');
+        }
+
+        // Try to reconnect
+        setTimeout(() => {
+            if (multiplayerState.peer && !multiplayerState.peer.destroyed) {
+                multiplayerState.peer.reconnect();
+            }
+        }, 1000);
+    });
+
+    multiplayerState.peer.on('close', () => {
+        console.log('Host peer connection closed');
+        const hostStatus = document.getElementById('hostStatus');
+        if (hostStatus) {
+            hostStatus.innerHTML = '<p>❌ Connection closed</p>';
+            hostStatus.classList.remove('connected');
+        }
     });
 }
 
@@ -174,6 +216,16 @@ function joinMultiplayerGameSimple() {
             multiplayerState.peer = null;
             joinStatus.innerHTML = '<p>❌ Connection failed</p>';
         });
+
+        conn.on('close', () => {
+            console.log('Connection to host closed');
+            multiplayerState.connected = false;
+            const joinStatus = document.getElementById('joinStatus');
+            if (joinStatus) {
+                joinStatus.innerHTML = '<p>⚠️ Disconnected from host</p>';
+                joinStatus.classList.remove('connected');
+            }
+        });
     });
 
     multiplayerState.peer.on('error', (err) => {
@@ -195,6 +247,66 @@ function joinMultiplayerGameSimple() {
         multiplayerState.peer = null;
         joinStatus.innerHTML = '<p>❌ Connection failed</p>';
     });
+
+    // Handle WiFi disconnection and reconnection for guests
+    multiplayerState.peer.on('disconnected', () => {
+        console.log('Guest disconnected from PeerJS server, attempting reconnect...');
+        const joinStatus = document.getElementById('joinStatus');
+        if (joinStatus) {
+            joinStatus.innerHTML = '<p>🔄 Connection lost, reconnecting...</p>';
+            joinStatus.classList.remove('connected');
+        }
+
+        // Try to reconnect
+        setTimeout(() => {
+            if (multiplayerState.peer && !multiplayerState.peer.destroyed) {
+                multiplayerState.peer.reconnect();
+
+                // Re-establish connection to host after reconnecting to PeerJS server
+                setTimeout(() => {
+                    if (multiplayerState.roomCode && multiplayerState.peer) {
+                        const conn = multiplayerState.peer.connect(multiplayerState.roomCode, { reliable: true });
+
+                        conn.on('open', () => {
+                            multiplayerState.conn = conn;
+                            multiplayerState.connected = true;
+                            joinStatus.innerHTML = '<p>✅ Reconnected!</p>';
+                            joinStatus.classList.add('connected');
+
+                            // Re-send player name
+                            conn.send({ type: 'playerName', name: multiplayerState.playerName });
+                        });
+
+                        conn.on('data', (data) => {
+                            if (data.type === 'gameState') {
+                                gameState = data.data;
+                                if (gameState.gameStarted) {
+                                    const gameSetup = document.getElementById('gameSetup');
+                                    if (gameSetup) gameSetup.style.display = 'none';
+                                    document.getElementById('gameArea').style.display = 'block';
+                                }
+                                renderGame();
+                            } else if (data.type === 'requestName') {
+                                conn.send({ type: 'playerName', name: multiplayerState.playerName });
+                            }
+                        });
+                    }
+                }, 500);
+            }
+        }, 1000);
+    });
+
+    multiplayerState.peer.on('close', () => {
+        console.log('Guest peer connection closed');
+        const joinStatus = document.getElementById('joinStatus');
+        if (joinStatus) {
+            joinStatus.innerHTML = '<p>❌ Connection closed</p>';
+            joinStatus.classList.remove('connected');
+        }
+    });
+
+    // Store room code for reconnection
+    multiplayerState.roomCode = roomCode;
 }
 
 function broadcastGameStateSimple() {

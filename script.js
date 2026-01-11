@@ -807,9 +807,11 @@ function displayHandResult(result, position, winType, playerCount = 4) {
 
     const limitName = getLimitHandName(result.han);
 
-    // Check if a game is active
+    // Check if a game is active (show button for solo OR if host in multiplayer)
     const gameActive = gameState.gameStarted;
-    const reportButton = gameActive && multiplayerState.isHost ?
+    const isSoloGame = gameActive && !multiplayerState.peer && !multiplayerState.conn;
+    const isMultiplayerHost = gameActive && multiplayerState.isHost;
+    const reportButton = (isSoloGame || isMultiplayerHost) ?
         `<button id="reportToGame" class="btn-primary btn-large" style="margin-top: 16px; width: 100%;">📊 Report to Game</button>` : '';
 
     container.innerHTML = `
@@ -831,7 +833,7 @@ function displayHandResult(result, position, winType, playerCount = 4) {
     container.style.display = 'block';
 
     // Add event listener for report button if game is active
-    if (gameActive && multiplayerState.isHost) {
+    if (isSoloGame || isMultiplayerHost) {
         const btn = document.getElementById('reportToGame');
         if (btn) {
             btn.addEventListener('click', () => reportScoreToGame(result, position, winType, points));
@@ -908,194 +910,8 @@ function getLimitHandName(han) {
 }
 
 // ===== MULTIPLAYER FUNCTIONS =====
-async function hostMultiplayerGame() {
-    const hostButton = document.getElementById('hostGame');
-    const nameInput = document.getElementById('hostNameInput');
-    const playerName = nameInput.value.trim();
-
-    if (!playerName) {
-        alert('Please enter your name');
-        nameInput.focus();
-        return;
-    }
-
-    // Prevent multiple clicks
-    if (multiplayerState.client || multiplayerState.isHost) {
-        alert('Already hosting a game');
-        return;
-    }
-
-    // Disable button
-    hostButton.disabled = true;
-    hostButton.textContent = 'Creating Room...';
-    nameInput.disabled = true;
-
-    multiplayerState.playerName = playerName;
-
-    const roomCode = generateRoomCode();
-    multiplayerState.roomCode = roomCode;
-    multiplayerState.isHost = true;
-
-    try {
-        // Create and connect WebRTC client
-        multiplayerState.client = new WebRTCClient();
-
-        // Set up event handlers
-        multiplayerState.client.onRoomCreated = (code) => {
-            console.log('Room created:', code);
-            multiplayerState.playerNames[multiplayerState.client.peerId] = playerName;
-
-            document.getElementById('roomCode').style.display = 'block';
-            document.querySelector('.code-display').textContent = roomCode;
-
-            const hostStatus = document.getElementById('hostStatus');
-            hostStatus.style.display = 'block';
-            hostStatus.innerHTML = '<p>✅ Room created! Waiting for players...</p>';
-            hostStatus.classList.add('connected');
-
-            hostButton.textContent = 'Room Created';
-
-            updatePlayerList();
-
-            // Show connected players section
-            document.getElementById('connectedPlayers').style.display = 'block';
-        };
-
-        multiplayerState.client.onPeerJoined = (peerId, name) => {
-            console.log('Player joined:', name, peerId);
-            multiplayerState.peerIds.push(peerId);
-            multiplayerState.playerNames[peerId] = name;
-            updatePlayerList();
-
-            const hostStatus = document.getElementById('hostStatus');
-            hostStatus.innerHTML = `<p>✅ ${multiplayerState.peerIds.length} player(s) connected</p>`;
-        };
-
-        multiplayerState.client.onPeerLeft = (peerId) => {
-            console.log('Player left:', peerId);
-            const index = multiplayerState.peerIds.indexOf(peerId);
-            if (index > -1) {
-                multiplayerState.peerIds.splice(index, 1);
-            }
-            delete multiplayerState.playerNames[peerId];
-            updatePlayerList();
-        };
-
-        multiplayerState.client.onMessage = (data, fromPeerId) => {
-            handleMultiplayerMessage(data, fromPeerId);
-        };
-
-        multiplayerState.client.onError = (error) => {
-            console.error('WebRTC error:', error);
-            alert('Connection error: ' + error.message);
-            hostButton.disabled = false;
-            hostButton.textContent = 'Create Room';
-            nameInput.disabled = false;
-            multiplayerState.client = null;
-            multiplayerState.isHost = false;
-        };
-
-        // Connect to signaling server
-        await multiplayerState.client.connect();
-
-        // Create room
-        multiplayerState.client.createRoom(roomCode, playerName);
-
-    } catch (error) {
-        console.error('Failed to create room:', error);
-        alert('Failed to create room: ' + error.message);
-        hostButton.disabled = false;
-        hostButton.textContent = 'Create Room';
-        nameInput.disabled = false;
-        multiplayerState.client = null;
-        multiplayerState.isHost = false;
-    }
-}
-
-async function joinMultiplayerGame() {
-    const roomCodeInput = document.getElementById('joinCodeInput');
-    const roomCode = roomCodeInput.value.toUpperCase().trim();
-    const joinButton = document.getElementById('joinGame');
-    const nameInput = document.getElementById('guestNameInput');
-    const playerName = nameInput.value.trim();
-
-    if (!playerName) {
-        alert('Please enter your name');
-        nameInput.focus();
-        return;
-    }
-
-    if (!roomCode || roomCode.length !== 6) {
-        alert('Please enter a valid 6-character room code');
-        roomCodeInput.focus();
-        return;
-    }
-
-    // Prevent multiple clicks
-    if (multiplayerState.client || multiplayerState.connected) {
-        alert('Already connecting or connected to a game');
-        return;
-    }
-
-    // Disable inputs during connection
-    joinButton.disabled = true;
-    joinButton.textContent = 'Connecting...';
-    nameInput.disabled = true;
-    roomCodeInput.disabled = true;
-
-    multiplayerState.playerName = playerName;
-
-    const joinStatus = document.getElementById('joinStatus');
-    joinStatus.innerHTML = '<p>🔄 Connecting to room...</p>';
-
-    try {
-        // Create and connect WebRTC client
-        multiplayerState.client = new WebRTCClient();
-
-        // Set up event handlers
-        multiplayerState.client.onJoinedRoom = (code) => {
-            console.log('Joined room:', code);
-            multiplayerState.connected = true;
-
-            joinStatus.innerHTML = '<p>✅ Connected to game!</p>';
-            joinStatus.classList.add('connected');
-
-            // Show game setup for guest
-            showGameSetup();
-        };
-
-        multiplayerState.client.onMessage = (data, fromPeerId) => {
-            handleMultiplayerMessage(data, fromPeerId);
-        };
-
-        multiplayerState.client.onError = (error) => {
-            console.error('WebRTC error:', error);
-            alert('Connection error: ' + error.message);
-            joinButton.disabled = false;
-            joinButton.textContent = 'Join Game';
-            nameInput.disabled = false;
-            roomCodeInput.disabled = false;
-            multiplayerState.client = null;
-            joinStatus.innerHTML = '<p>❌ Connection failed</p>';
-        };
-
-        // Connect to signaling server
-        await multiplayerState.client.connect();
-
-        // Join room
-        multiplayerState.client.joinRoom(roomCode, playerName);
-
-    } catch (error) {
-        console.error('Failed to join room:', error);
-        alert('Failed to connect: ' + error.message);
-        joinButton.disabled = false;
-        joinButton.textContent = 'Join Game';
-        nameInput.disabled = false;
-        roomCodeInput.disabled = false;
-        multiplayerState.client = null;
-        joinStatus.innerHTML = '<p>❌ Connection failed</p>';
-    }
-}
+// Note: The actual multiplayer functions are in multiplayer-simple.js
+// and accessed via window.SimpleMultiplayer.hostGame() and window.SimpleMultiplayer.joinGame()
 
 function generateRoomCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
