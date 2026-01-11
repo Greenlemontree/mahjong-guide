@@ -1,50 +1,41 @@
 // Simple P2P Multiplayer using PeerJS with optimized settings
 // No server needed - uses public STUN/TURN servers for NAT traversal
 
-// Better ICE servers configuration (multiple free public servers)
+// Optimized ICE servers for mobile - reduced to essential servers for faster connection
 const ICE_SERVERS = {
     iceServers: [
-        // Google's public STUN servers
+        // Primary Google STUN server (fastest)
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        { urls: 'stun:stun3.l.google.com:19302' },
-        { urls: 'stun:stun4.l.google.com:19302' },
 
-        // Metered's free TURN servers (no auth needed for basic usage)
+        // Backup STUN server
+        { urls: 'stun:stun1.l.google.com:19302' },
+
+        // Single TURN server for NAT traversal (port 80 is most compatible with mobile networks)
         {
             urls: 'turn:openrelay.metered.ca:80',
-            username: 'openrelayproject',
-            credential: 'openrelayproject'
-        },
-        {
-            urls: 'turn:openrelay.metered.ca:443',
-            username: 'openrelayproject',
-            credential: 'openrelayproject'
-        },
-        {
-            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
             username: 'openrelayproject',
             credential: 'openrelayproject'
         }
     ],
     sdpSemantics: 'unified-plan',
-    iceCandidatePoolSize: 10
+    iceCandidatePoolSize: 3, // Reduced from 10 for faster initialization
+    iceTransportPolicy: 'all', // Try all connection methods
+    bundlePolicy: 'max-bundle', // Bundle media for efficiency
+    rtcpMuxPolicy: 'require' // Reduce ports needed
 };
 
-// Enhanced PeerJS configuration with retries
+// Enhanced PeerJS configuration optimized for mobile
 const PEER_CONFIG = {
     config: ICE_SERVERS,
     debug: 0,
-    // Use multiple PeerJS cloud servers as fallbacks
+    // Use PeerJS cloud server
     host: '0.peerjs.com',
     port: 443,
     path: '/',
     secure: true,
-    // Connection timeout settings
-    pingInterval: 5000,
-    // Retry settings
-    connectionTimeout: 20000
+    // Optimized for faster mobile connections
+    pingInterval: 3000, // Reduced from 5000 for faster keepalive
+    connectionTimeout: 10000 // Reduced from 20000 - fail faster and let user retry
 };
 
 function createPeerWithRetry(peerId = null, options = {}) {
