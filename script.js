@@ -675,7 +675,10 @@ function analyzeHand(tiles, winType, position, closed, conditions = {}) {
     }
 
     // Menzen Tsumo (門前清自摸和) - closed hand self-draw
-    // NOT awarded with Pinfu or Chiitoitsu (they already account for the closed hand)
+    // Awarded when:
+    // 1. Win by tsumo AND hand is closed
+    // 2. AND hand is NOT Chiitoitsu (seven pairs has its own scoring)
+    // 3. AND does NOT have Pinfu (Pinfu tsumo already accounts for closed hand in fu calculation)
     if (winType === 'tsumo' && closed && !hasPinfu && !isSevenPairs) {
         yaku.push({ name: '門前清自摸和 (Menzen Tsumo)', han: 1 });
         han += 1;
