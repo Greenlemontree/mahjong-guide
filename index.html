@@ -12,9 +12,6 @@
     <meta name="theme-color" content="#2c5282">
 
     <link rel="stylesheet" href="styles.css">
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="simple-multiplayer.js"></script>
-    <script src="multiplayer-simple.js"></script>
 </head>
 <body>
     <div class="container">
@@ -29,119 +26,52 @@
             <button class="tab-btn" data-tab="tiles">Tile Guide</button>
         </nav>
 
-        <!-- GAME TAB (Integrated Multiplayer + Scorer) -->
+        <!-- GAME TAB (Local Score Tracker) -->
         <div id="game-tab" class="tab-content active">
-            <h2>Multiplayer Game Room</h2>
+            <h2>Score Tracker</h2>
 
-            <!-- Initial Choice: Host or Join -->
-            <div id="initialChoice" class="multiplayer-section">
-                <div class="connection-choice">
-                    <div class="choice-card">
-                        <h3>🎮 Host a Game</h3>
-                        <p>Create a new room and invite others</p>
-                        <button id="chooseHost" class="btn-primary btn-large">Host New Game</button>
-                    </div>
-                    <div class="choice-card">
-                        <h3>🔗 Join a Game</h3>
-                        <p>Enter a room code to join</p>
-                        <button id="chooseJoin" class="btn-primary btn-large">Join Existing Game</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Host Screen -->
-            <div id="hostScreen" class="multiplayer-section" style="display: none;">
-                <button id="backFromHost" class="btn-back">← Back</button>
-                <h3>Host a Game</h3>
-
-                <div class="name-input-section">
-                    <label>Your Name:</label>
-                    <input type="text" id="hostNameInput" placeholder="Enter your name" maxlength="20">
-                </div>
-
-                <!-- Game Settings -->
+            <!-- Game Setup Phase -->
+            <div id="gameSetup" class="game-setup">
                 <div class="setup-options">
                     <div class="setup-row">
-                        <label>Number of Players:</label>
+                        <label>Game Mode:</label>
                         <div class="mode-selector">
-                            <button id="hostMode3p" class="mode-btn">3 Players (Sanma)</button>
-                            <button id="hostMode4p" class="mode-btn active">4 Players</button>
-                        </div>
-                    </div>
-
-                    <div class="setup-row">
-                        <label>Starting Points:</label>
-                        <select id="hostStartingPoints">
-                            <option value="25000">25,000 (Standard)</option>
-                            <option value="30000">30,000</option>
-                            <option value="35000">35,000</option>
-                        </select>
-                    </div>
-                </div>
-
-                <button id="hostGame" class="btn-primary">Create Room</button>
-
-                <div id="roomCode" style="display: none;">
-                    <h4>Room Code:</h4>
-                    <div class="code-display"></div>
-                    <p class="code-instruction">Share this code with other players</p>
-                </div>
-
-                <div class="connection-status" id="hostStatus" style="display: none;">
-                    <p></p>
-                </div>
-
-                <div id="connectedPlayers" style="display: none;">
-                    <h3>Connected Players</h3>
-                    <div id="playerList"></div>
-
-                    <button id="startGameFromHost" class="btn-primary btn-large" style="margin-top: 20px;">Start Game</button>
-                </div>
-            </div>
-
-            <!-- Join Screen -->
-            <div id="joinScreen" class="multiplayer-section" style="display: none;">
-                <button id="backFromJoin" class="btn-back">← Back</button>
-                <h3>Join a Game</h3>
-
-                <div class="name-input-section">
-                    <label>Your Name:</label>
-                    <input type="text" id="guestNameInput" placeholder="Enter your name" maxlength="20">
-                </div>
-
-                <div class="join-input-section">
-                    <label>Room Code:</label>
-                    <input type="text" id="joinCodeInput" placeholder="Enter 6-digit code" maxlength="6">
-                </div>
-
-                <button id="joinGame" class="btn-primary">Join Room</button>
-
-                <div class="connection-status" id="joinStatus">
-                    <p>Enter the room code from the host</p>
-                </div>
-            </div>
-
-            <!-- Game Setup Phase (shown after connection) -->
-            <div id="gameSetup" class="game-setup" style="display: none;">
-                <h2>Game Setup</h2>
-
-                <div class="setup-options">
-                    <div class="setup-row">
-                        <label>Number of Players:</label>
-                        <div class="mode-selector">
-                            <button id="mode3p" class="mode-btn">3 Players (Sanma)</button>
                             <button id="mode4p" class="mode-btn active">4 Players</button>
+                            <button id="mode3p" class="mode-btn">3 Players (Sanma)</button>
                         </div>
+                    </div>
+
+                    <div id="sanmaVariantRow" class="setup-row" style="display: none;">
+                        <label>Sanma Variant:</label>
+                        <select id="sanmaVariant">
+                            <option value="standard">Standard Sanma</option>
+                            <option value="atama">Atama Mahjong</option>
+                            <option value="toutenkou">Toutenkou (Kanto)</option>
+                        </select>
+                        <p id="variantDescription" class="variant-desc"></p>
                     </div>
 
                     <div class="setup-row">
                         <label>Starting Points:</label>
                         <select id="startingPoints">
-                            <option value="25000">25,000 (Standard)</option>
+                            <option value="25000">25,000 (Standard 4P)</option>
                             <option value="30000">30,000</option>
-                            <option value="35000">35,000</option>
+                            <option value="35000">35,000 (Standard Sanma)</option>
                         </select>
                     </div>
+
+                    <div class="setup-row">
+                        <label>Game Length:</label>
+                        <select id="gameLength">
+                            <option value="hanchan">Hanchan (East + South)</option>
+                            <option value="tonpuu">Tonpuu (East Only)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="player-names-section">
+                    <h3>Player Names</h3>
+                    <div id="playerNameInputs"></div>
                 </div>
 
                 <button id="newGame" class="btn-primary btn-large">Start Game</button>
@@ -157,8 +87,13 @@
                     </div>
                     <div class="honba-riichi">
                         <span>本場: <span id="honba">0</span></span>
-                        <span>立直棒: <span id="riichiSticks">0</span></span>
+                        <span>供託: <span id="riichiSticks">0</span>本 (<span id="riichiPoints">0</span>点)</span>
                     </div>
+                </div>
+
+                <div id="nukidoraDisplay" class="nukidora-display" style="display: none;">
+                    <span>抜きドラ (Nukidora):</span>
+                    <div id="nukidoraTiles"></div>
                 </div>
 
                 <div id="playerScores" class="player-scores"></div>
@@ -169,14 +104,24 @@
                         <button class="result-btn" data-result="ron">Ron</button>
                         <button class="result-btn" data-result="tsumo">Tsumo</button>
                         <button class="result-btn" data-result="draw">Draw</button>
+                        <button class="result-btn" data-result="riichi">Riichi</button>
                         <button class="result-btn" data-result="chombo">Chombo</button>
                     </div>
+
+                    <div id="sanmaActions" class="sanma-actions" style="display: none;">
+                        <button class="result-btn nukidora-btn" data-result="nukidora">北 Nukidora (Kita)</button>
+                    </div>
+
                     <p style="margin-top: 12px; color: #718096; font-size: 0.9em;">
-                        💡 Tip: Use the Hand Calculator tab to calculate scores, then click "Report to Game"
+                        Use the Hand Calculator tab to calculate scores, then click "Report to Game"
                     </p>
                 </div>
 
                 <div id="resultForm" style="display: none;"></div>
+
+                <div class="game-controls">
+                    <button id="endGameBtn" class="btn-secondary">End Game</button>
+                </div>
             </div>
         </div>
 
@@ -582,44 +527,87 @@
                 <div class="rules-section" style="background: #fff8e1; border-left: 4px solid #ffa726;">
                     <h3 style="color: #e65100;">3-Player (Sanma) Complete Setup Guide</h3>
 
-                    <h4>Initial Setup</h4>
-                    <ol>
-                        <li><strong>Tile removal:</strong> Remove all 2-8 Man (character) tiles BEFORE shuffling (108 tiles total instead of 136)</li>
-                        <li><strong>Winds:</strong> Only use East, South, West winds (remove North wind tiles)</li>
-                        <li><strong>Shuffle:</strong> Mix all 108 tiles face-down on the table</li>
-                        <li><strong>Wall building:</strong> Each player builds 18 tiles wide × 2 tiles high (36 tiles per player)</li>
-                        <li><strong>Form triangle:</strong> Push the three walls together to form a triangle in the center</li>
-                        <li><strong>Starting points:</strong> Typically 35,000 instead of 25,000</li>
-                    </ol>
+                    <h4>Tile Set (108 tiles)</h4>
+                    <ul>
+                        <li><strong>Remove:</strong> All 2-8 Man (萬) tiles - keep only 1-man and 9-man</li>
+                        <li><strong>Keep:</strong> All Pin (筒), Sou (索), Winds, and Dragons</li>
+                        <li><strong>Note:</strong> 1-man and 9-man are kept for Kokushi Musou and Chinroutou</li>
+                    </ul>
 
-                    <h4>Breaking the Wall & Starting Hands</h4>
-                    <p>Same process as 4-player:</p>
-                    <ol>
-                        <li><strong>Dealer (親):</strong> East player is the starting dealer</li>
-                        <li><strong>Roll dice:</strong> Dealer rolls two dice to determine which wall to break</li>
-                        <li><strong>Count counterclockwise:</strong> Count from dealer to find the wall</li>
-                        <li><strong>Draw tiles:</strong> Dealer draws 4 tiles, then each player in turn
-                            <ul>
-                                <li>Repeat 3 times (everyone has 12 tiles)</li>
-                                <li>Dealer takes 2 more tiles, others take 1 more</li>
-                                <li>Dealer starts with 14 tiles, others with 13 tiles</li>
-                            </ul>
-                        </li>
-                    </ol>
+                    <h4>Key Rule Changes</h4>
+                    <ul>
+                        <li><strong>No Chii:</strong> Cannot call sequences from other players (Pon and Kan only)</li>
+                        <li><strong>Seats:</strong> East, South, West only (no North seat)</li>
+                        <li><strong>Starting Points:</strong> 35,000 (standard)</li>
+                        <li><strong>Wall:</strong> Each player builds 18 stacks (36 tiles)</li>
+                    </ul>
+
+                    <h4>Dead Wall (王牌)</h4>
+                    <ul>
+                        <li><strong>Structure:</strong> 7 stacks (14 tiles) reserved</li>
+                        <li><strong>Rinshan draws:</strong> 8 replacement tiles available (4 stacks)</li>
+                        <li><strong>Dora indicator:</strong> 5th tile from the right end (not 3rd)</li>
+                    </ul>
+
+                    <h4>Nukidora (抜きドラ) / Kita (北)</h4>
+                    <p>North tiles (北) become bonus dora in sanma:</p>
+                    <ul>
+                        <li><strong>Pei nuki:</strong> When you draw a North tile, you may declare "Kita" to set it aside</li>
+                        <li><strong>Bonus:</strong> Each declared North counts as +1 dora (like bonus tile)</li>
+                        <li><strong>Replacement:</strong> Draw a replacement tile from the dead wall (like after kan)</li>
+                        <li><strong>Optional:</strong> You can keep North in hand for Kokushi or honor-based yaku</li>
+                        <li><strong>Visibility:</strong> Declared nukidora are placed face-up beside your hand</li>
+                    </ul>
 
                     <h4>Scoring Differences</h4>
                     <ul>
-                        <li><strong>Han and fu calculations:</strong> Exactly the same as 4-player</li>
-                        <li><strong>Tsumo payments:</strong> Only 2 losers pay instead of 3
-                            <ul>
-                                <li>Dealer wins: Each player pays 2× the amount</li>
-                                <li>Non-dealer wins: Dealer pays 2×, other player pays 1×</li>
-                            </ul>
-                        </li>
-                        <li><strong>North tiles (北):</strong> Can be treated as bonus tiles in some variants</li>
+                        <li><strong>Ron:</strong> Same as 4-player (loser pays full amount)</li>
+                        <li><strong>Tsumo (Non-dealer wins):</strong> Dealer pays 2×, other player pays 1×</li>
+                        <li><strong>Tsumo (Dealer wins):</strong> Each player pays the full non-dealer amount</li>
+                        <li><strong>Honba bonus:</strong> +300 per counter (100 from each player on tsumo)</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section" style="background: #e8f5e9; border-left: 4px solid #4caf50;">
+                    <h3 style="color: #2e7d32;">Atama Mahjong Variant</h3>
+                    <p>A sanma variant that allows calling to form pairs:</p>
+
+                    <h4>Special Rule</h4>
+                    <ul>
+                        <li><strong>Atama call:</strong> You can call a discarded tile to form a <strong>pair</strong> (not just triplets)</li>
+                        <li><strong>Opens hand:</strong> Like Pon, this call opens your hand</li>
+                        <li><strong>Strategy:</strong> Useful for completing difficult waits or racing to win</li>
                     </ul>
 
-                    <p style="margin-top: 12px;"><strong>Pro tip:</strong> Use the "3 Players" option in Hand Calculator for correct tsumo payments!</p>
+                    <h4>Why Play Atama?</h4>
+                    <ul>
+                        <li>Faster gameplay with more calling opportunities</li>
+                        <li>Changes strategy - pairs become more valuable to hold</li>
+                        <li>Popular in casual sanma games</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section" style="background: #e3f2fd; border-left: 4px solid #2196f3;">
+                    <h3 style="color: #1565c0;">Toutenkou Variant (Kanto Region)</h3>
+                    <p>A more complex sanma variant from the Kanto region of Japan:</p>
+
+                    <h4>Tile Set Differences</h4>
+                    <ul>
+                        <li><strong>Keep:</strong> 1-man, 5-man, and 9-man (remove 2-4 and 6-8 man)</li>
+                        <li><strong>Nukidora:</strong> ALL manzu tiles AND North tiles can be extracted as nukidora</li>
+                    </ul>
+
+                    <h4>Scoring Adjustments</h4>
+                    <ul>
+                        <li><strong>Tsumo:</strong> Non-dealer receives (dealer payment × 2) as total</li>
+                        <li><strong>Some rules:</strong> Dealer always pays double on all tsumo wins</li>
+                    </ul>
+
+                    <h4>Other Variants</h4>
+                    <ul>
+                        <li><strong>North as Yakuhai:</strong> Some variants treat North as a yakuhai (honor triplet = 1 han)</li>
+                        <li><strong>Tsumo loss split:</strong> Various rules for how non-winners split the payment</li>
+                    </ul>
                 </div>
             </div>
 

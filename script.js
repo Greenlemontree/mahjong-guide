@@ -9,15 +9,18 @@ const TILES = {
 
 // ===== GAME STATE =====
 let gameState = {
-    mode: 4,
+    mode: 4,                    // 3 or 4 players
+    sanmaVariant: 'standard',   // 'standard', 'atama', or 'toutenkou'
     startingPoints: 25000,
+    gameLength: 'hanchan',      // 'hanchan' or 'tonpuu'
     players: [],
     currentRound: 1,
     currentWind: '東',
-    honba: 0,
-    riichiSticks: 0,
+    honba: 0,                   // Counter sticks (+300 per honba to winner)
+    riichiSticks: 0,            // Riichi bets on table (1000 pts each, winner collects all)
     dealer: 0,
-    gameStarted: false
+    gameStarted: false,
+    nukidora: {}                // Player index -> array of nukidora tiles declared
 };
 
 // ===== HAND CALCULATOR STATE =====
@@ -28,28 +31,23 @@ let handState = {
     checkFuriten: false
 };
 
-// ===== MULTIPLAYER STATE =====
-let multiplayerState = {
-    peer: null,
-    conn: null,
-    isHost: false,
-    roomCode: null,
-    connected: false,
-    connections: [],
-    playerName: '',
-    playerNames: {} // Map of peer IDs to names
-};
-
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     updateModeDisplay();
+    generatePlayerNameInputs();
 });
 
 function setupEventListeners() {
     // Mode selection
     document.getElementById('mode3p')?.addEventListener('click', () => setMode(3));
     document.getElementById('mode4p')?.addEventListener('click', () => setMode(4));
+
+    // Sanma variant selection
+    document.getElementById('sanmaVariant')?.addEventListener('change', (e) => {
+        gameState.sanmaVariant = e.target.value;
+        updateVariantDescription();
+    });
 
     // Tab navigation
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -61,6 +59,9 @@ function setupEventListeners() {
 
     // New game
     document.getElementById('newGame')?.addEventListener('click', startNewGame);
+
+    // End game
+    document.getElementById('endGameBtn')?.addEventListener('click', endGame);
 
     // Result type buttons
     document.querySelectorAll('.result-btn').forEach(btn => {
@@ -76,21 +77,6 @@ function setupEventListeners() {
     document.getElementById('checkFuriten')?.addEventListener('change', toggleFuritenCheck);
     document.getElementById('chomboBtn')?.addEventListener('click', declareChombo);
 
-    // Multiplayer navigation
-    document.getElementById('chooseHost')?.addEventListener('click', showHostScreen);
-    document.getElementById('chooseJoin')?.addEventListener('click', showJoinScreen);
-    document.getElementById('backFromHost')?.addEventListener('click', showInitialChoice);
-    document.getElementById('backFromJoin')?.addEventListener('click', showInitialChoice);
-
-    // Multiplayer connection - using simple wrapper functions
-    document.getElementById('hostGame')?.addEventListener('click', () => window.SimpleMultiplayer.hostGame());
-    document.getElementById('joinGame')?.addEventListener('click', () => window.SimpleMultiplayer.joinGame());
-    document.getElementById('startGameFromHost')?.addEventListener('click', () => window.SimpleMultiplayer.startFromHost());
-
-    // Host mode selection
-    document.getElementById('hostMode3p')?.addEventListener('click', () => setHostMode(3));
-    document.getElementById('hostMode4p')?.addEventListener('click', () => setHostMode(4));
-
     // Rules sub-tabs
     document.querySelectorAll('.rules-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -100,51 +86,44 @@ function setupEventListeners() {
     });
 }
 
-function setHostMode(mode) {
-    gameState.mode = mode;
-    document.querySelectorAll('#hostScreen .mode-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`hostMode${mode}p`).classList.add('active');
+function updateVariantDescription() {
+    const descEl = document.getElementById('variantDescription');
+    if (!descEl) return;
 
-    const startingPointsSelect = document.getElementById('hostStartingPoints');
-    if (mode === 3) {
-        startingPointsSelect.value = '35000';
-    } else {
-        startingPointsSelect.value = '25000';
-    }
-}
-
-// ===== NAVIGATION FUNCTIONS =====
-function showInitialChoice() {
-    document.getElementById('initialChoice').style.display = 'block';
-    document.getElementById('hostScreen').style.display = 'none';
-    document.getElementById('joinScreen').style.display = 'none';
-
-    // Reset state
-    if (multiplayerState.peer) {
-        multiplayerState.peer.destroy();
-    }
-    multiplayerState = {
-        peer: null,
-        conn: null,
-        isHost: false,
-        roomCode: null,
-        connected: false,
-        connections: [],
-        playerName: '',
-        playerNames: {}
+    const descriptions = {
+        'standard': 'Standard sanma rules with nukidora (North tiles as bonus dora).',
+        'atama': 'Allows calling discards to form pairs, opening your hand.',
+        'toutenkou': 'Kanto variant: keeps 1/5/9-man, all manzu + North are nukidora.'
     };
+
+    descEl.textContent = descriptions[gameState.sanmaVariant] || '';
 }
 
-function showHostScreen() {
-    document.getElementById('initialChoice').style.display = 'none';
-    document.getElementById('hostScreen').style.display = 'block';
-    document.getElementById('joinScreen').style.display = 'none';
+function generatePlayerNameInputs() {
+    const container = document.getElementById('playerNameInputs');
+    if (!container) return;
+
+    container.innerHTML = '';
+    const winds = gameState.mode === 3 ? ['東 (East)', '南 (South)', '西 (West)'] : ['東 (East)', '南 (South)', '西 (West)', '北 (North)'];
+
+    for (let i = 0; i < gameState.mode; i++) {
+        const div = document.createElement('div');
+        div.className = 'player-name-input';
+        div.innerHTML = `
+            <label>${winds[i]}:</label>
+            <input type="text" id="playerName${i}" placeholder="Player ${i + 1}" maxlength="20">
+        `;
+        container.appendChild(div);
+    }
 }
 
-function showJoinScreen() {
-    document.getElementById('initialChoice').style.display = 'none';
-    document.getElementById('hostScreen').style.display = 'none';
-    document.getElementById('joinScreen').style.display = 'block';
+function endGame() {
+    if (confirm('End current game and return to setup?')) {
+        gameState.gameStarted = false;
+        document.getElementById('gameArea').style.display = 'none';
+        document.getElementById('gameSetup').style.display = 'block';
+        generatePlayerNameInputs();
+    }
 }
 
 // ===== TAB SWITCHING =====
@@ -171,12 +150,18 @@ function setMode(mode) {
     document.getElementById(`mode${mode}p`).classList.add('active');
 
     const startingPointsSelect = document.getElementById('startingPoints');
+    const sanmaVariantRow = document.getElementById('sanmaVariantRow');
+
     if (mode === 3) {
         startingPointsSelect.value = '35000';
+        if (sanmaVariantRow) sanmaVariantRow.style.display = 'block';
+        updateVariantDescription();
     } else {
         startingPointsSelect.value = '25000';
+        if (sanmaVariantRow) sanmaVariantRow.style.display = 'none';
     }
 
+    generatePlayerNameInputs();
     updateModeDisplay();
 }
 
@@ -626,7 +611,7 @@ function analyzeHand(tiles, winType, position, closed, conditions = {}) {
     // Check for Pinfu (平和 - All Sequences, Valueless Pair, Two-sided Wait)
     let hasPinfu = false;
     if (closed && !isSevenPairs) {
-        const pinfuValid = checkPinfu(tiles, winType);
+        const pinfuValid = checkPinfu(tiles);
         if (pinfuValid) {
             yaku.push({ name: '平和 (Pinfu - Simple Hand)', han: 1 });
             han += 1;
@@ -774,7 +759,7 @@ function countDragonTriplets(tiles) {
     return Object.values(dragonCounts).filter(count => count >= 3).length;
 }
 
-function checkPinfu(tiles, winType) {
+function checkPinfu(tiles) {
     // Pinfu requirements:
     // 1. All sequences (no triplets except the pair)
     // 2. Valueless pair (not dragons, not seat/round wind - simplified: no honor tiles in pair)
@@ -783,16 +768,16 @@ function checkPinfu(tiles, winType) {
 
     const counts = {};
     tiles.forEach(t => {
-        const key = `${t.suit}-${t.value}`;
-        counts[key] = (counts[key] || 0) + 1;
+        const tileKey = `${t.suit}-${t.value}`;
+        counts[tileKey] = (counts[tileKey] || 0) + 1;
     });
 
     // Find the pair
-    const pairs = Object.entries(counts).filter(([key, count]) => count === 2);
+    const pairs = Object.entries(counts).filter(([, count]) => count === 2);
     if (pairs.length !== 1) return false; // Must have exactly one pair
 
     const pairKey = pairs[0][0];
-    const [pairSuit, pairValue] = pairKey.split('-');
+    const pairSuit = pairKey.split('-')[0];
 
     // Pair must not be honor tiles (dragons or winds)
     if (pairSuit === 'w' || pairSuit === 'd') return false;
@@ -864,11 +849,9 @@ function displayHandResult(result, position, winType, playerCount = 4) {
 
     const limitName = getLimitHandName(result.han);
 
-    // Check if a game is active (show button for solo OR if host in multiplayer)
+    // Check if a game is active - show report button
     const gameActive = gameState.gameStarted;
-    const isSoloGame = gameActive && !multiplayerState.peer && !multiplayerState.conn;
-    const isMultiplayerHost = gameActive && multiplayerState.isHost;
-    const reportButton = (isSoloGame || isMultiplayerHost) ?
+    const reportButton = gameActive ?
         `<button id="reportToGame" class="btn-primary btn-large" style="margin-top: 16px; width: 100%;">📊 Report to Game</button>` : '';
 
     container.innerHTML = `
@@ -890,7 +873,7 @@ function displayHandResult(result, position, winType, playerCount = 4) {
     container.style.display = 'block';
 
     // Add event listener for report button if game is active
-    if (isSoloGame || isMultiplayerHost) {
+    if (gameActive) {
         const btn = document.getElementById('reportToGame');
         if (btn) {
             btn.addEventListener('click', () => reportScoreToGame(result, position, winType, points));
@@ -966,122 +949,45 @@ function getLimitHandName(han) {
     return null;
 }
 
-// ===== MULTIPLAYER FUNCTIONS =====
-// Note: The actual multiplayer functions are in multiplayer-simple.js
-// and accessed via window.SimpleMultiplayer.hostGame() and window.SimpleMultiplayer.joinGame()
 
-function generateRoomCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code;
-}
-
-function handleMultiplayerMessage(data, fromPeerId) {
-    if (data.type === 'gameState') {
-        gameState = data.data;
-
-        // If game has started, show game area
-        if (gameState.gameStarted) {
-            const gameSetup = document.getElementById('gameSetup');
-            if (gameSetup) gameSetup.style.display = 'none';
-            document.getElementById('gameArea').style.display = 'block';
-        }
-
-        renderGame();
-    }
-}
-
-function broadcastGameState() {
-    if (multiplayerState.isHost && multiplayerState.connections) {
-        multiplayerState.connections.forEach(conn => {
-            if (conn.open) {
-                conn.send({ type: 'gameState', data: gameState });
-            }
-        });
-    }
-}
-
-function updatePlayerList() {
-    const listEl = document.getElementById('playerList');
-    const containerEl = document.getElementById('connectedPlayers');
-
-    if (!listEl || !containerEl) return;
-
-    containerEl.style.display = 'block';
-    listEl.innerHTML = '';
-
-    // Add host
-    const hostDiv = document.createElement('div');
-    hostDiv.className = 'connected-player host';
-    const hostName = multiplayerState.playerName || 'Host';
-    hostDiv.innerHTML = `<span>${hostName} (You)</span><span class="player-role">HOST</span>`;
-    listEl.appendChild(hostDiv);
-
-    // Add other players
-    if (multiplayerState.connections) {
-        multiplayerState.connections.forEach((conn) => {
-            const playerDiv = document.createElement('div');
-            playerDiv.className = 'connected-player';
-            const playerName = multiplayerState.playerNames[conn.peer] || 'Guest';
-            playerDiv.innerHTML = `<span>${playerName}</span><span class="player-role">GUEST</span>`;
-            listEl.appendChild(playerDiv);
-        });
-    }
-}
-
-function showGameSetup() {
-    // Hide all connection screens
-    document.getElementById('initialChoice').style.display = 'none';
-    document.getElementById('hostScreen').style.display = 'none';
-    document.getElementById('joinScreen').style.display = 'none';
-
-    // Show game setup
-    const gameSetup = document.getElementById('gameSetup');
-
-    if (gameSetup && multiplayerState.isHost) {
-        gameSetup.style.display = 'block';
-    } else if (gameSetup) {
-        // For guests, show a waiting message instead
-        gameSetup.style.display = 'block';
-        const newGameBtn = document.getElementById('newGame');
-        const modeButtons = document.querySelectorAll('.mode-btn');
-        const startingPoints = document.getElementById('startingPoints');
-
-        if (newGameBtn) {
-            newGameBtn.disabled = true;
-            newGameBtn.textContent = 'Waiting for host to start game...';
-        }
-
-        // Disable controls for guests
-        modeButtons.forEach(btn => btn.disabled = true);
-        if (startingPoints) startingPoints.disabled = true;
-    }
-}
-
-// ===== GAME FUNCTIONS (from original code) =====
+// ===== GAME FUNCTIONS =====
 function startNewGame() {
     const startingPoints = parseInt(document.getElementById('startingPoints').value);
+    const gameLength = document.getElementById('gameLength')?.value || 'hanchan';
+
     gameState.startingPoints = startingPoints;
+    gameState.gameLength = gameLength;
     gameState.currentRound = 1;
     gameState.currentWind = '東';
     gameState.honba = 0;
     gameState.riichiSticks = 0;
     gameState.dealer = 0;
     gameState.gameStarted = true;
+    gameState.nukidora = {};
+
+    // Get sanma variant if applicable
+    if (gameState.mode === 3) {
+        gameState.sanmaVariant = document.getElementById('sanmaVariant')?.value || 'standard';
+    }
 
     gameState.players = [];
     const winds = gameState.mode === 3 ? ['東', '南', '西'] : ['東', '南', '西', '北'];
 
     for (let i = 0; i < gameState.mode; i++) {
+        const nameInput = document.getElementById(`playerName${i}`);
+        const playerName = nameInput?.value.trim() || `Player ${i + 1}`;
+
         gameState.players.push({
-            name: `Player ${i + 1}`,
+            name: playerName,
             wind: winds[i],
             points: startingPoints,
             riichi: false
         });
+
+        // Initialize nukidora array for sanma
+        if (gameState.mode === 3) {
+            gameState.nukidora[i] = [];
+        }
     }
 
     renderGame();
@@ -1091,92 +997,24 @@ function startNewGame() {
     if (gameSetup) gameSetup.style.display = 'none';
     document.getElementById('gameArea').style.display = 'block';
 
-    broadcastGameState();
-}
-
-function startGameFromHostRoom() {
-    // Read settings from host screen
-    const startingPoints = parseInt(document.getElementById('hostStartingPoints').value);
-
-    // Apply settings to game state
-    gameState.startingPoints = startingPoints;
-    gameState.currentRound = 1;
-    gameState.currentWind = '東';
-    gameState.honba = 0;
-    gameState.riichiSticks = 0;
-    gameState.dealer = 0;
-    gameState.gameStarted = true;
-
-    // Initialize players based on connected players
-    gameState.players = [];
-    const winds = gameState.mode === 3 ? ['東', '南', '西'] : ['東', '南', '西', '北'];
-
-    // Add host as first player
-    gameState.players.push({
-        name: multiplayerState.playerName,
-        wind: winds[0],
-        points: startingPoints,
-        riichi: false
-    });
-
-    // Add connected players
-    if (multiplayerState.connections) {
-        multiplayerState.connections.forEach((conn, index) => {
-            const playerName = multiplayerState.playerNames[conn.peer] || `Player ${index + 2}`;
-            if (index < gameState.mode - 1) {
-                gameState.players.push({
-                    name: playerName,
-                    wind: winds[index + 1],
-                    points: startingPoints,
-                    riichi: false
-                });
-            }
-        });
+    // Show sanma-specific UI
+    if (gameState.mode === 3) {
+        document.getElementById('sanmaActions')?.style.setProperty('display', 'block');
+    } else {
+        document.getElementById('sanmaActions')?.style.setProperty('display', 'none');
     }
-
-    renderGame();
-
-    // Hide host screen, show game area
-    document.getElementById('hostScreen').style.display = 'none';
-    document.getElementById('gameArea').style.display = 'block';
-
-    // Broadcast game start to all players
-    broadcastGameState();
 }
+
 
 function renderGame() {
     updateRoundDisplay();
     renderPlayerScores();
+    renderNukidoraDisplay();
 
-    // Hide score actions for guests (only host can record scores)
-    const scoreActions = document.getElementById('scoreActions');
-    const resultForm = document.getElementById('resultForm');
-
-    if (scoreActions) {
-        // Check if user is a guest (connected but not host)
-        const isGuest = (multiplayerState.connected || multiplayerState.conn) && !multiplayerState.isHost;
-
-        if (isGuest) {
-            scoreActions.style.display = 'none';
-
-            // Add read-only notice for guests
-            if (resultForm && !document.getElementById('guestNotice')) {
-                resultForm.innerHTML = `
-                    <div id="guestNotice" style="background: linear-gradient(135deg, #718096 0%, #4a5568 100%); padding: 16px; border-radius: 8px; margin-top: 16px; text-align: center;">
-                        <p style="margin: 0; color: white;">👁️ <strong>Spectator Mode</strong></p>
-                        <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.8); font-size: 0.9em;">The host is managing the game scores</p>
-                    </div>
-                `;
-                resultForm.style.display = 'block';
-            }
-        } else {
-            scoreActions.style.display = 'block';
-            // Clear guest notice if exists
-            const guestNotice = document.getElementById('guestNotice');
-            if (guestNotice) {
-                guestNotice.remove();
-            }
-        }
+    // Show sanma-specific actions
+    const sanmaActions = document.getElementById('sanmaActions');
+    if (sanmaActions) {
+        sanmaActions.style.display = gameState.mode === 3 ? 'block' : 'none';
     }
 }
 
@@ -1185,11 +1023,55 @@ function updateRoundDisplay() {
     const numberEl = document.getElementById('roundNumber');
     const honbaEl = document.getElementById('honba');
     const riichiEl = document.getElementById('riichiSticks');
+    const riichiPointsEl = document.getElementById('riichiPoints');
 
     if (windEl) windEl.textContent = gameState.currentWind;
     if (numberEl) numberEl.textContent = gameState.currentRound;
     if (honbaEl) honbaEl.textContent = gameState.honba;
     if (riichiEl) riichiEl.textContent = gameState.riichiSticks;
+    if (riichiPointsEl) riichiPointsEl.textContent = (gameState.riichiSticks * 1000).toLocaleString();
+}
+
+function renderNukidoraDisplay() {
+    const nukidoraDisplay = document.getElementById('nukidoraDisplay');
+    const nukidoraTiles = document.getElementById('nukidoraTiles');
+
+    if (!nukidoraDisplay || !nukidoraTiles) return;
+
+    // Only show for sanma
+    if (gameState.mode !== 3) {
+        nukidoraDisplay.style.display = 'none';
+        return;
+    }
+
+    // Check if any player has nukidora
+    let totalNukidora = 0;
+    for (let i = 0; i < gameState.mode; i++) {
+        if (gameState.nukidora[i]) {
+            totalNukidora += gameState.nukidora[i].length;
+        }
+    }
+
+    if (totalNukidora === 0) {
+        nukidoraDisplay.style.display = 'none';
+        return;
+    }
+
+    nukidoraDisplay.style.display = 'block';
+    nukidoraTiles.innerHTML = '';
+
+    for (let i = 0; i < gameState.mode; i++) {
+        if (gameState.nukidora[i] && gameState.nukidora[i].length > 0) {
+            const playerNukidora = document.createElement('div');
+            playerNukidora.className = 'player-nukidora';
+            playerNukidora.innerHTML = `
+                <span class="nukidora-player-name">${gameState.players[i].name}:</span>
+                <span class="nukidora-tiles">${gameState.nukidora[i].map(() => '🀃').join(' ')}</span>
+                <span class="nukidora-count">(+${gameState.nukidora[i].length} dora)</span>
+            `;
+            nukidoraTiles.appendChild(playerNukidora);
+        }
+    }
 }
 
 function renderPlayerScores() {
@@ -1200,16 +1082,19 @@ function renderPlayerScores() {
 
     gameState.players.forEach((player, index) => {
         const isDealer = index === gameState.dealer;
+        const nukidoraCount = gameState.nukidora[index]?.length || 0;
+
         const card = document.createElement('div');
-        card.className = `player-card ${isDealer ? 'dealer' : ''}`;
+        card.className = `player-card ${isDealer ? 'dealer' : ''} ${player.riichi ? 'in-riichi' : ''}`;
 
         card.innerHTML = `
             <div class="player-info">
                 <div class="player-name">${player.name}</div>
-                <div class="player-wind">${player.wind}</div>
+                <div class="player-wind">${player.wind}${isDealer ? ' (親)' : ''}</div>
             </div>
             <div class="player-score">${player.points.toLocaleString()}</div>
             ${player.riichi ? '<div class="player-riichi">立直</div>' : ''}
+            ${nukidoraCount > 0 ? `<div class="player-nukidora-badge">北×${nukidoraCount}</div>` : ''}
         `;
 
         container.appendChild(card);
@@ -1221,12 +1106,118 @@ function handleResultType(resultType) {
     if (!resultForm) return;
 
     if (resultType === 'draw') {
-        // Handle draw - no score change, advance dealer with honba
-        if (confirm('Confirm draw? This will advance to the next hand with +1 honba.')) {
+        // Handle draw - riichi bets stay on table, honba increases
+        if (confirm('Confirm draw? Riichi bets stay on table for next winner. +1 honba.')) {
             gameState.honba++;
+            // Note: riichiSticks stay on table - winner of next hand collects them
             renderGame();
-            broadcastGameState();
         }
+        return;
+    }
+
+    if (resultType === 'riichi') {
+        // Handle riichi declaration
+        resultForm.innerHTML = `
+            <div style="background: linear-gradient(135deg, #805ad5 0%, #6b46c1 100%); padding: 20px; border-radius: 8px; margin-top: 16px;">
+                <h3 style="margin-top: 0; color: white;">立直 Riichi Declaration</h3>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; color: white; font-weight: bold;">Who declares Riichi?</label>
+                    <select id="riichiPlayerSelect" style="width: 100%; padding: 10px; border-radius: 4px; border: none; font-size: 1em;">
+                        ${gameState.players.map((p, i) =>
+                            `<option value="${i}" ${p.riichi ? 'disabled' : ''}>${p.name} (${p.wind})${p.riichi ? ' - Already in Riichi' : ''}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+
+                <p style="color: rgba(255,255,255,0.9); font-size: 0.9em; margin-bottom: 16px;">
+                    Player pays 1,000 points to the table. Winner of a future hand collects all riichi bets.
+                </p>
+
+                <div style="display: flex; gap: 12px;">
+                    <button id="confirmRiichi" class="btn-primary" style="flex: 1;">Confirm Riichi</button>
+                    <button id="cancelRiichi" class="btn-back" style="flex: 1;">Cancel</button>
+                </div>
+            </div>
+        `;
+
+        resultForm.style.display = 'block';
+
+        document.getElementById('confirmRiichi').addEventListener('click', () => {
+            const playerIdx = parseInt(document.getElementById('riichiPlayerSelect').value);
+
+            if (gameState.players[playerIdx].riichi) {
+                alert('This player is already in riichi!');
+                return;
+            }
+
+            if (gameState.players[playerIdx].points < 1000) {
+                alert('Player does not have enough points for riichi (needs 1,000)!');
+                return;
+            }
+
+            // Deduct 1000 points and add to riichi sticks on table
+            gameState.players[playerIdx].points -= 1000;
+            gameState.players[playerIdx].riichi = true;
+            gameState.riichiSticks++;
+
+            renderGame();
+            resultForm.style.display = 'none';
+            resultForm.innerHTML = '';
+        });
+
+        document.getElementById('cancelRiichi').addEventListener('click', () => {
+            resultForm.style.display = 'none';
+            resultForm.innerHTML = '';
+        });
+        return;
+    }
+
+    if (resultType === 'nukidora') {
+        // Handle nukidora (Kita) declaration for sanma
+        resultForm.innerHTML = `
+            <div style="background: linear-gradient(135deg, #38a169 0%, #2f855a 100%); padding: 20px; border-radius: 8px; margin-top: 16px;">
+                <h3 style="margin-top: 0; color: white;">北 Nukidora (Kita) Declaration</h3>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; color: white; font-weight: bold;">Who declares Kita?</label>
+                    <select id="nukidoraPlayerSelect" style="width: 100%; padding: 10px; border-radius: 4px; border: none; font-size: 1em;">
+                        ${gameState.players.map((p, i) =>
+                            `<option value="${i}">${p.name} (${p.wind}) - ${gameState.nukidora[i]?.length || 0} nukidora</option>`
+                        ).join('')}
+                    </select>
+                </div>
+
+                <p style="color: rgba(255,255,255,0.9); font-size: 0.9em; margin-bottom: 16px;">
+                    North tile set aside as bonus dora. Player draws replacement from dead wall.
+                </p>
+
+                <div style="display: flex; gap: 12px;">
+                    <button id="confirmNukidora" class="btn-primary" style="flex: 1;">Add Nukidora</button>
+                    <button id="cancelNukidora" class="btn-back" style="flex: 1;">Cancel</button>
+                </div>
+            </div>
+        `;
+
+        resultForm.style.display = 'block';
+
+        document.getElementById('confirmNukidora').addEventListener('click', () => {
+            const playerIdx = parseInt(document.getElementById('nukidoraPlayerSelect').value);
+
+            if (!gameState.nukidora[playerIdx]) {
+                gameState.nukidora[playerIdx] = [];
+            }
+            gameState.nukidora[playerIdx].push('北');
+
+            renderGame();
+            resultForm.style.display = 'none';
+            resultForm.innerHTML = '';
+        });
+
+        document.getElementById('cancelNukidora').addEventListener('click', () => {
+            resultForm.style.display = 'none';
+            resultForm.innerHTML = '';
+        });
         return;
     }
 
@@ -1351,20 +1342,13 @@ function handleResultType(resultType) {
 }
 
 // ===== SCORE REPORTING FUNCTIONS =====
-function reportScoreToGame(result, position, winType, points) {
+function reportScoreToGame(result, _position, winType, points) {
     // Show a form to select winner and loser
     switchTab('game');
 
     // Create score reporting UI
     const resultForm = document.getElementById('resultForm');
     if (!resultForm) return;
-
-    const isDealer = position === 'dealer';
-    const totalPoints = typeof points === 'number' ? points :
-        (winType === 'tsumo' ?
-            (isDealer ? points.all * (gameState.mode - 1) :
-                points.dealer + points.nondealer * (gameState.mode - 2)) :
-            points);
 
     resultForm.innerHTML = `
         <div style="background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); padding: 20px; border-radius: 8px; margin-top: 16px;">
@@ -1422,37 +1406,74 @@ function reportScoreToGame(result, position, winType, points) {
 }
 
 function applyScore(winnerIdx, loserIdx, winType, points, isDealer) {
+    // Calculate honba bonus (+300 per counter, or +100 from each on tsumo)
+    const honbaBonus = gameState.honba * 300;
+
     if (winType === 'ron') {
-        // Ron: loser pays winner
+        // Ron: loser pays winner (base + honba bonus)
         const payment = typeof points === 'number' ? points : points;
-        gameState.players[winnerIdx].points += payment;
-        gameState.players[loserIdx].points -= payment;
+        gameState.players[winnerIdx].points += payment + honbaBonus;
+        gameState.players[loserIdx].points -= payment + honbaBonus;
     } else {
         // Tsumo: everyone pays winner
+        // Honba bonus: +100 from each player (total +300 in 4p, +200 in 3p)
+        const honbaPerPlayer = 100;
+
         if (typeof points === 'object') {
             // Complex tsumo payment
             gameState.players.forEach((player, idx) => {
                 if (idx === winnerIdx) {
-                    // Winner receives
-                    const received = isDealer ?
+                    // Winner receives base + honba from all
+                    const baseReceived = isDealer ?
                         points.all * (gameState.mode - 1) :
                         points.dealer + points.nondealer * (gameState.mode - 2);
-                    player.points += received;
+                    const totalHonba = honbaPerPlayer * (gameState.mode - 1);
+                    player.points += baseReceived + totalHonba;
                 } else {
-                    // Others pay
-                    const payment = (idx === gameState.dealer && !isDealer) ?
-                        points.dealer : points.nondealer || points.all;
-                    player.points -= payment;
+                    // Others pay base + honba
+                    const basePayment = (idx === gameState.dealer && !isDealer) ?
+                        points.dealer : (points.nondealer || points.all);
+                    player.points -= basePayment + honbaPerPlayer;
+                }
+            });
+        } else if (typeof points === 'number') {
+            // Simple tsumo with flat amount (divide among losers)
+            const perPlayer = Math.ceil(points / (gameState.mode - 1));
+            gameState.players.forEach((player, idx) => {
+                if (idx === winnerIdx) {
+                    player.points += points + (honbaPerPlayer * (gameState.mode - 1));
+                } else {
+                    player.points -= perPlayer + honbaPerPlayer;
                 }
             });
         }
     }
 
-    // Check if winner was in riichi (collect riichi sticks)
-    if (gameState.players[winnerIdx].riichi) {
+    // Winner collects ALL riichi sticks on the table (not just their own)
+    if (gameState.riichiSticks > 0) {
         gameState.players[winnerIdx].points += gameState.riichiSticks * 1000;
         gameState.riichiSticks = 0;
-        gameState.players[winnerIdx].riichi = false;
+    }
+
+    // Reset all players' riichi status after a win
+    gameState.players.forEach(player => {
+        player.riichi = false;
+    });
+
+    // Count nukidora bonus for winner (sanma only)
+    if (gameState.mode === 3 && gameState.nukidora[winnerIdx]) {
+        const nukidoraCount = gameState.nukidora[winnerIdx].length;
+        if (nukidoraCount > 0) {
+            // Each nukidora is worth bonus points - already factored into han calculation
+            // but display it in the message
+        }
+    }
+
+    // Reset nukidora for next hand
+    if (gameState.mode === 3) {
+        for (let i = 0; i < gameState.mode; i++) {
+            gameState.nukidora[i] = [];
+        }
     }
 
     // Advance round
@@ -1461,10 +1482,13 @@ function applyScore(winnerIdx, loserIdx, winType, points, isDealer) {
     // Update display
     renderGame();
 
-    // Broadcast to other players
-    broadcastGameState();
+    // Build result message
+    let resultMsg = `${gameState.players[winnerIdx].name} wins!`;
+    if (honbaBonus > 0) {
+        resultMsg += ` (+${honbaBonus} honba bonus)`;
+    }
 
-    alert(`Score recorded! ${gameState.players[winnerIdx].name} wins!`);
+    alert(resultMsg);
 }
 
 function advanceRound(winnerIdx) {
@@ -1543,18 +1567,6 @@ function showGameEnd() {
     alert(`Game Over! Winner: ${sortedPlayers[0].name} with ${sortedPlayers[0].points.toLocaleString()} points!`);
 }
 
-// Bridge functions to simple multiplayer (defined in multiplayer-simple.js)
-function updatePlayerList() {
-    if (window.SimpleMultiplayer) {
-        window.SimpleMultiplayer.updatePlayerList();
-    }
-}
-
-function broadcastGameState() {
-    if (window.SimpleMultiplayer) {
-        window.SimpleMultiplayer.broadcast();
-    }
-}
 
 // Make tiles appear immediately
 if (document.readyState === 'loading') {
