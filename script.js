@@ -1394,7 +1394,8 @@ function reportScoreToGame(result, _position, winType, points) {
             return;
         }
 
-        applyScore(winnerIdx, loserIdx, winType, points, isDealer);
+        const winnerIsDealer = winnerIdx === gameState.dealer;
+        applyScore(winnerIdx, loserIdx, winType, points, winnerIsDealer);
         resultForm.style.display = 'none';
         resultForm.innerHTML = '';
     });
@@ -1409,11 +1410,17 @@ function applyScore(winnerIdx, loserIdx, winType, points, isDealer) {
     // Calculate honba bonus (+300 per counter, or +100 from each on tsumo)
     const honbaBonus = gameState.honba * 300;
 
+    // Track point changes for animation
+    const pointChanges = new Array(gameState.mode).fill(0);
+
     if (winType === 'ron') {
         // Ron: loser pays winner (base + honba bonus)
         const payment = typeof points === 'number' ? points : points;
-        gameState.players[winnerIdx].points += payment + honbaBonus;
-        gameState.players[loserIdx].points -= payment + honbaBonus;
+        const totalPayment = payment + honbaBonus;
+        gameState.players[winnerIdx].points += totalPayment;
+        gameState.players[loserIdx].points -= totalPayment;
+        pointChanges[winnerIdx] = totalPayment;
+        pointChanges[loserIdx] = -totalPayment;
     } else {
         // Tsumo: everyone pays winner
         // Honba bonus: +100 from each player (total +300 in 4p, +200 in 3p)
@@ -1428,12 +1435,16 @@ function applyScore(winnerIdx, loserIdx, winType, points, isDealer) {
                         points.all * (gameState.mode - 1) :
                         points.dealer + points.nondealer * (gameState.mode - 2);
                     const totalHonba = honbaPerPlayer * (gameState.mode - 1);
-                    player.points += baseReceived + totalHonba;
+                    const totalReceived = baseReceived + totalHonba;
+                    player.points += totalReceived;
+                    pointChanges[idx] = totalReceived;
                 } else {
                     // Others pay base + honba
                     const basePayment = (idx === gameState.dealer && !isDealer) ?
                         points.dealer : (points.nondealer || points.all);
-                    player.points -= basePayment + honbaPerPlayer;
+                    const totalPayment = basePayment + honbaPerPlayer;
+                    player.points -= totalPayment;
+                    pointChanges[idx] = -totalPayment;
                 }
             });
         } else if (typeof points === 'number') {
@@ -1441,17 +1452,24 @@ function applyScore(winnerIdx, loserIdx, winType, points, isDealer) {
             const perPlayer = Math.ceil(points / (gameState.mode - 1));
             gameState.players.forEach((player, idx) => {
                 if (idx === winnerIdx) {
-                    player.points += points + (honbaPerPlayer * (gameState.mode - 1));
+                    const totalReceived = points + (honbaPerPlayer * (gameState.mode - 1));
+                    player.points += totalReceived;
+                    pointChanges[idx] = totalReceived;
                 } else {
-                    player.points -= perPlayer + honbaPerPlayer;
+                    const totalPayment = perPlayer + honbaPerPlayer;
+                    player.points -= totalPayment;
+                    pointChanges[idx] = -totalPayment;
                 }
             });
         }
     }
 
     // Winner collects ALL riichi sticks on the table (not just their own)
+    let riichiBonus = 0;
     if (gameState.riichiSticks > 0) {
-        gameState.players[winnerIdx].points += gameState.riichiSticks * 1000;
+        riichiBonus = gameState.riichiSticks * 1000;
+        gameState.players[winnerIdx].points += riichiBonus;
+        pointChanges[winnerIdx] += riichiBonus;
         gameState.riichiSticks = 0;
     }
 
@@ -1460,15 +1478,6 @@ function applyScore(winnerIdx, loserIdx, winType, points, isDealer) {
         player.riichi = false;
     });
 
-    // Count nukidora bonus for winner (sanma only)
-    if (gameState.mode === 3 && gameState.nukidora[winnerIdx]) {
-        const nukidoraCount = gameState.nukidora[winnerIdx].length;
-        if (nukidoraCount > 0) {
-            // Each nukidora is worth bonus points - already factored into han calculation
-            // but display it in the message
-        }
-    }
-
     // Reset nukidora for next hand
     if (gameState.mode === 3) {
         for (let i = 0; i < gameState.mode; i++) {
@@ -1476,38 +1485,86 @@ function applyScore(winnerIdx, loserIdx, winType, points, isDealer) {
         }
     }
 
-    // Advance round
-    advanceRound(winnerIdx);
+    // Show animated score change overlay
+    showScoreAnimation(winnerIdx, pointChanges, riichiBonus, honbaBonus, () => {
+        // Advance round after animation
+        advanceRound(winnerIdx);
 
-    // Update display
-    renderGame();
+        // Update display
+        renderGame();
+    });
+}
 
-    // Build result message
-    let resultMsg = `${gameState.players[winnerIdx].name} wins!`;
-    if (honbaBonus > 0) {
-        resultMsg += ` (+${honbaBonus} honba bonus)`;
-    }
+function showScoreAnimation(winnerIdx, pointChanges, riichiBonus, honbaBonus, callback) {
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'score-animation-overlay';
+    overlay.innerHTML = `
+        <div class="score-animation-content">
+            <div class="winner-announcement">
+                <span class="winner-icon">🀄</span>
+                <h2>${gameState.players[winnerIdx].name} wins!</h2>
+            </div>
+            <div class="score-changes">
+                ${gameState.players.map((player, idx) => {
+                    const change = pointChanges[idx];
+                    const isWinner = idx === winnerIdx;
+                    const changeClass = change > 0 ? 'positive' : change < 0 ? 'negative' : '';
+                    const changePrefix = change > 0 ? '+' : '';
+                    return `
+                        <div class="score-change-row ${isWinner ? 'winner' : ''}">
+                            <span class="player-name-anim">${player.wind} ${player.name}</span>
+                            <span class="score-arrow ${changeClass}">
+                                ${change !== 0 ? `<span class="change-amount">${changePrefix}${change.toLocaleString()}</span>` : ''}
+                            </span>
+                            <span class="new-score">${player.points.toLocaleString()}</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            ${riichiBonus > 0 ? `<div class="bonus-info riichi-bonus">立直 Riichi collected: +${riichiBonus.toLocaleString()}</div>` : ''}
+            ${honbaBonus > 0 ? `<div class="bonus-info honba-bonus">本場 Honba bonus: +${honbaBonus.toLocaleString()}</div>` : ''}
+            <button class="btn-primary continue-btn">Continue</button>
+        </div>
+    `;
 
-    alert(resultMsg);
+    document.body.appendChild(overlay);
+
+    // Add animation classes after a brief delay
+    setTimeout(() => {
+        overlay.classList.add('visible');
+    }, 50);
+
+    // Handle continue button
+    overlay.querySelector('.continue-btn').addEventListener('click', () => {
+        overlay.classList.remove('visible');
+        setTimeout(() => {
+            overlay.remove();
+            if (callback) callback();
+        }, 300);
+    });
 }
 
 function advanceRound(winnerIdx) {
-    // If dealer wins, increment honba
+    // If dealer wins, increment honba (dealer stays the same - renchan)
     if (winnerIdx === gameState.dealer) {
         gameState.honba++;
+        // No wind rotation - dealer keeps their position
     } else {
         // Non-dealer wins: advance dealer, reset honba
         gameState.dealer = (gameState.dealer + 1) % gameState.mode;
         gameState.honba = 0;
 
-        // Check if we need to advance wind
+        // Rotate seat winds - each player's wind shifts
+        rotateWinds();
+
+        // Check if we need to advance the round wind (East → South etc.)
         if (gameState.dealer === 0) {
             const winds = ['東', '南', '西', '北'];
             const currentWindIdx = winds.indexOf(gameState.currentWind);
 
-            // Standard game: East + South rounds (Hanchan)
-            // For a full game, uncomment the line below to play all four winds
-            const maxWindIdx = 1; // 0 = East only (Tonpuu), 1 = East+South (Hanchan), 3 = All four winds
+            // Determine max rounds based on game length setting
+            const maxWindIdx = gameState.gameLength === 'tonpuu' ? 0 : 1;
 
             if (currentWindIdx < maxWindIdx) {
                 gameState.currentWind = winds[currentWindIdx + 1];
@@ -1521,6 +1578,19 @@ function advanceRound(winnerIdx) {
             gameState.currentRound++;
         }
     }
+}
+
+function rotateWinds() {
+    // Rotate seat winds counter-clockwise (in Mahjong, dealer passes to the right)
+    // Player 0's wind goes to Player 3, Player 1's wind goes to Player 0, etc.
+    const seatWinds = gameState.mode === 3 ? ['東', '南', '西'] : ['東', '南', '西', '北'];
+
+    gameState.players.forEach(player => {
+        // Each player's wind index increases by 1 (wrapping around)
+        const currentWindIdx = seatWinds.indexOf(player.wind);
+        const newWindIdx = (currentWindIdx + 1) % gameState.mode;
+        player.wind = seatWinds[newWindIdx];
+    });
 }
 
 function showGameEnd() {
